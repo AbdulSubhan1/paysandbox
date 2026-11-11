@@ -3,7 +3,9 @@ import { findTestCard } from '@/lib/card-guard/guard';
 import { parseExpiry, validateEmail, validateName } from '@/lib/checkout/validate';
 import type { Db } from '@/lib/db/client';
 import { checkoutSessions, customers, paymentActivity, payments } from '@/lib/db/schema';
+import { DISPUTE_CARD_DELAY_SECONDS } from '@/lib/disputes/disputes';
 import { recordEvent } from '@/lib/events/record';
+import { enqueueJob } from '@/lib/jobs/jobs';
 import { newId } from '@/lib/ids';
 import { buildReturnUrl, effectiveSessionStatus } from '@/lib/sessions/sessions';
 import { type CustomerRow, type PaymentRow, toPaymentObject } from './objects';
@@ -80,6 +82,10 @@ export async function completePayment(tx: Tx, payment: PaymentRow, customer: Cus
     .set({ status: 'complete', paymentId: payment.id })
     .where(eq(checkoutSessions.id, payment.checkoutSessionId));
   await recordEvent(tx, { merchantId: paid.merchantId, type: 'payment.succeeded', payload: toPaymentObject(paid, customer), now });
+  if (paid.testCard === 'dispute') {
+    const runAt = new Date(now.getTime() + DISPUTE_CARD_DELAY_SECONDS * 1000);
+    await enqueueJob(tx, { merchantId: paid.merchantId, kind: 'open_dispute', refId: paid.id, runAt, now });
+  }
   return paid;
 }
 
