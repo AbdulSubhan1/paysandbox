@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PaySandbox mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sand:#f4efe4; --paper:#fffdf8; --ink:#1d1b17; --muted:#6d665a; --line:#e3dbc9; --line-2:#d3c8b1;
+  --accent:#0d7a5c; --accent-ink:#ffffff; --accent-soft:#e3f2ec;
+  --ok:#0d7a5c; --ok-soft:#e3f2ec; --bad:#b4361c; --bad-soft:#fbe9e3; --warn:#7f5700; --warn-soft:#fdf2d2;
+  --info:#2357b5; --info-soft:#e6eefb; --violet:#6b3fc4; --violet-soft:#efe8fb; --neutral:#5d5a52; --neutral-soft:#ece8de;
+  --hazard:#f2b705; --code-bg:#1d1b17; --code-ink:#ede6d6;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif; --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--sand);color:var(--ink);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.result h2:focus{outline:none}
+.ferr{color:var(--bad);font-size:13px;margin-top:5px}
+.ferr:empty{display:none}
+.input[aria-invalid="true"]{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
+input,select{font:inherit;color:inherit}
+code,.mono{font-family:var(--mono);font-size:.86em}
+h1,h2,h3{margin:0;line-height:1.2}
+
+/* mockup switcher (not part of the product) */
+.switcher{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:8px 16px;background:#11100e;color:#d8d0bf;font-size:13px;overflow-x:auto;white-space:nowrap}
+.switcher .tag{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8d8577}
+.switcher a{text-decoration:none;padding:5px 12px;border-radius:999px;color:#d8d0bf}
+.switcher a.on{background:#f4efe4;color:#11100e;font-weight:600}
+.switcher .spacer{flex:1}
+.switcher .tag,.switcher .spacer{display:none}
+@media (min-width:760px){.switcher .tag,.switcher .spacer{display:inline}}
+
+/* TEST MODE banner: hazard tape, cannot be hidden */
+.testband{position:sticky;top:37px;z-index:40;height:34px;display:flex;align-items:center;justify-content:center;
+  background:repeating-linear-gradient(-45deg,var(--hazard) 0 14px,#1d1b17 14px 28px)}
+.testband span{background:var(--hazard);color:#1d1b17;font-weight:700;font-size:12.5px;letter-spacing:.08em;padding:3px 12px;border:2px solid #1d1b17;border-radius:4px;text-transform:uppercase}
+
+/* checkout */
+.co{display:grid;grid-template-columns:1fr;min-height:calc(100vh - 71px)}
+.co-summary{padding:28px 16px;background:var(--sand)}
+.co-main{padding:28px 16px 48px;background:var(--paper);border-top:1px solid var(--line)}
+@media (min-width:900px){
+  .co{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)}
+  .co-summary{padding:56px 48px 48px max(48px,calc((100vw - 1100px)/2))}
+  .co-main{padding:56px max(48px,calc((100vw - 1100px)/2)) 56px 48px;border-top:0;border-left:1px solid var(--line)}
+}
+.merchant{display:flex;align-items:center;gap:10px;font-weight:600}
+.merchant .logo{width:32px;height:32px;border-radius:8px;background:#7a4b2a;color:#fff;display:grid;place-items:center;font-size:14px}
+.back{font-size:13px;color:var(--muted);text-decoration:none}
+.pay-amount{font-size:36px;font-weight:700;letter-spacing:-.02em;margin:28px 0 4px}
+.lines{margin-top:24px;border-top:1px solid var(--line)}
+.lines div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.lines div.total{font-weight:700;border-bottom:0}
+.lines small{display:block;color:var(--muted);font-size:12.5px}
+.form{max-width:440px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:#3b372f}
+.input{width:100%;padding:11px 12px;border:1px solid var(--line-2);border-radius:8px;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.input.err{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
+.cardbox{border:1px solid var(--line-2);border-radius:8px;background:#fff;overflow:hidden}
+.cardbox .input{border:0;border-radius:0;box-shadow:none}
+.cardbox .row{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.cardbox .row .input+.input{border-left:1px solid var(--line)}
+.cardbox .input[aria-invalid="true"]{background:var(--bad-soft)}
+.cardbox.err{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
+.card-num-wrap{position:relative}
+.card-num-wrap .brand{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
+.msg{font-size:13px;padding:10px 12px;border-radius:8px;margin:10px 0 0}
+.msg.bad{background:var(--bad-soft);color:var(--bad)}
+.msg.warn{background:var(--warn-soft);color:#6f4d00}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:8px;border:1px solid var(--line-2);background:#fff;color:var(--ink);font-weight:500;font-size:14px;text-decoration:none}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.primary:disabled{background:#a9c7bc;border-color:#a9c7bc;cursor:not-allowed;filter:none}
+.btn.danger{color:var(--bad);border-color:#e4b7a9}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn.block{width:100%;padding:13px 16px;font-size:15px;font-weight:600}
+.secure{display:flex;gap:6px;justify-content:center;font-size:12px;color:var(--muted);margin-top:12px}
+.testcards{margin-top:28px;max-width:440px;border:1px dashed var(--line-2);border-radius:10px;padding:14px;background:var(--sand)}
+.testcards h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+.tc{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border-radius:8px;border:1px solid transparent;background:transparent;text-align:left}
+.tc:hover{background:var(--paper);border-color:var(--line)}
+.tc .num{font-family:var(--mono);font-size:13px}
+.tc .what{font-size:12.5px;color:var(--muted);text-align:right}
+.tc.fake .num{color:var(--bad)}
+.tc-note{font-size:12px;color:var(--muted);margin:8px 10px 0}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result{max-width:440px;text-align:center;padding-top:24px}
+.result .icon{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;margin:0 auto 16px;font-size:26px;font-weight:700}
+.result .icon.ok{background:var(--ok-soft);color:var(--ok)}
+.result .icon.bad{background:var(--bad-soft);color:var(--bad)}
+.result h2{font-size:22px;margin-bottom:6px}
+.result p{color:var(--muted);margin:0 0 6px}
+.result .actions{display:flex;flex-direction:column;gap:8px;margin-top:22px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13.5px;text-align:left;background:var(--sand);border-radius:10px;padding:14px;margin-top:18px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;text-align:right;overflow-wrap:anywhere}
+
+/* OTP modal */
+.overlay{position:fixed;inset:0;z-index:60;background:rgba(17,16,14,.55);display:grid;place-items:center;padding:16px}
+.bank{width:100%;max-width:380px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.bank header{background:#173a6b;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;font-weight:600}
+.bank header small{font-weight:400;opacity:.8;font-size:12px}
+.bank .body{padding:20px 18px}
+.bank .otp{font-family:var(--mono);font-size:24px;letter-spacing:.4em;text-align:center}
+
+/* app shell */
+.shell{display:grid;grid-template-columns:1fr;min-height:calc(100vh - 37px)}
+.side{background:var(--paper);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;gap:6px;overflow-x:auto;white-space:nowrap}
+.side .brandmark{display:none}
+.side .grp{display:none}
+.side a{text-decoration:none;padding:7px 10px;border-radius:7px;font-size:14px;color:#3b372f}
+.side a.on{background:var(--sand);font-weight:600;color:var(--ink)}
+.content{padding:20px 16px 56px;min-width:0}
+@media (min-width:900px){
+  .shell{grid-template-columns:232px minmax(0,1fr)}
+  .side{flex-direction:column;border-bottom:0;border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:37px;height:calc(100vh - 37px);white-space:normal}
+  .side .brandmark{display:flex;align-items:center;gap:8px;font-weight:700;padding:0 8px 16px}
+  .side .grp{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 10px 4px}
+  .content{padding:28px 40px 64px}
+}
+.mark{width:26px;height:26px;border-radius:7px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+.topline{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.topline h1{font-size:24px;letter-spacing:-.01em}
+.modepill{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;padding:5px 10px;border-radius:999px;background:var(--warn-soft);color:#6f4d00;font-weight:600}
+.modepill .toggle{width:28px;height:16px;border-radius:999px;background:#e3c56b;position:relative}
+.modepill .toggle:after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px;min-width:0}
+.panel h2{font-size:15px;margin-bottom:12px}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.panel-head h2{margin:0}
+.grid{display:grid;gap:18px;grid-template-columns:1fr}
+@media (min-width:1100px){.grid.two{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}
+@media (min-width:900px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1200px){.stats{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;text-decoration:none;display:block}
+.stat:hover{border-color:var(--line-2)}
+.stat .l{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.stat .v{font-size:20px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+.stat .c{font-size:12.5px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.stack{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.tablewrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:500;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--sand)}
+td.amt{font-weight:600}
+td.muted,.muted{color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}
+.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-info{background:var(--info-soft);color:var(--info)}
+.b-violet{background:var(--violet-soft);color:var(--violet)}
+.b-neutral{background:var(--neutral-soft);color:var(--neutral)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chip{padding:5px 11px;border-radius:999px;border:1px solid var(--line-2);background:var(--paper);font-size:13px}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chip .n{opacity:.6;margin-left:4px}
+.crumb{font-size:13px;color:var(--muted);text-decoration:none;display:inline-block;margin-bottom:10px}
+.hero-amt{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.hero-amt .v{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{position:relative;padding:0 0 18px 26px}
+.timeline li:before{content:"";position:absolute;left:5px;top:16px;bottom:-2px;width:2px;background:var(--line)}
+.timeline li:last-child{padding-bottom:0}
+.timeline li:last-child:before{display:none}
+.timeline .pt{position:absolute;left:0;top:5px;width:12px;height:12px;border-radius:50%;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line-2)}
+.timeline .t{font-size:14px;font-weight:500}
+.timeline .s{font-size:12.5px;color:var(--muted)}
+.c-ok{background:var(--ok)} .c-bad{background:var(--bad)} .c-warn{background:#d59a00} .c-info{background:var(--info)} .c-violet{background:var(--violet)} .c-neutral{background:#a59f92}
+.inline-form{background:var(--sand);border-radius:10px;padding:14px;margin-top:12px}
+.inline-form .rowf{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.inline-form .field{margin:0;flex:1;min-width:140px}
+.keyrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.keyrow:last-child{border-bottom:0}
+.keyrow .k{flex:1;min-width:200px}
+.keyrow .k b{display:block;font-size:13px}
+.keyrow .k small{color:var(--muted);font-size:12.5px}
+.keyval{font-family:var(--mono);font-size:13px;background:var(--sand);padding:6px 10px;border-radius:6px;overflow-wrap:anywhere}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:0;overflow-x:auto}
+.tabs button{border:0;background:none;padding:8px 12px;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+pre.code{margin:0;background:var(--code-bg);color:var(--code-ink);border-radius:0 0 10px 10px;padding:16px;overflow-x:auto;font:12.5px/1.6 var(--mono)}
+pre.code.round{border-radius:10px}
+.code .cm{color:#8f877a}
+.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.steps li{counter-increment:s;display:flex;gap:10px;font-size:14px}
+.steps li:before{content:counter(s);flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12px;display:grid;place-items:center}
+.attempts{list-style:none;margin:0;padding:0;font-size:13.5px}
+.attempts li{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.attempts li:last-child{border-bottom:0}
+.note{font-size:13px;color:var(--muted);background:var(--sand);border-radius:8px;padding:10px 12px;margin-top:12px}
+.empty{color:var(--muted);font-size:14px;padding:12px 0}
+/* fake browser address bar: shows which site the customer is on */
+.urlbar{display:flex;align-items:center;gap:10px;padding:8px 16px;background:#e9e3d6;border-bottom:1px solid var(--line-2);font-size:13px;min-width:0}
+.urlbar .dots{display:flex;gap:5px;flex:none}
+.urlbar .dots i{width:10px;height:10px;border-radius:50%;background:#cfc6b3;display:block}
+.urlbar .addr{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line-2);border-radius:999px;padding:5px 12px;font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.urlbar .addr b{color:var(--ink);font-weight:500}
+.urlbar .who{flex:none;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px}
+.who.merchant-site{background:#f3e3d6;color:#7a4b2a}
+.who.ps-site{background:var(--accent-soft);color:var(--accent)}
+@media (max-width:520px){.urlbar .dots,.urlbar .who{display:none}}
+.store{background:#fff;min-height:calc(100vh - 82px);font-family:Georgia,'Times New Roman',serif}
+.store-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid #eee}
+.store-head .merchant{font-family:var(--sans)}
+.store-head nav{display:flex;gap:16px;font-size:14px;color:#7a6a5c}
+.store-body{max-width:1000px;margin:0 auto;padding:28px 16px 48px;display:grid;gap:28px}
+@media (min-width:900px){.store-body{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);padding:48px 24px}}
+.store h1{font-size:30px;font-weight:400;margin-bottom:18px}
+.cart-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #eee}
+.cart-row .thumb{width:56px;height:56px;border-radius:8px;background:#f3e3d6;flex:none;display:grid;place-items:center;color:#7a4b2a;font-weight:700;font-family:var(--sans)}
+.cart-row .grow{flex:1}
+.cart-row small{display:block;color:#6f6155;font-size:13px}
+.store-btn{width:100%;margin-top:20px;padding:14px;border:0;border-radius:6px;background:#7a4b2a;color:#fff;font:600 15px var(--sans);display:flex;align-items:center;justify-content:center;gap:8px}
+.store-btn:hover{filter:brightness(1.1)}
+.explain{font-family:var(--sans);background:var(--sand);border:1px dashed var(--line-2);border-radius:12px;padding:18px;font-size:14px;align-self:start}
+.explain h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);opacity:0;z-index:80;background:#11100e;color:#f4efe4;padding:10px 16px;border-radius:10px;font-size:13.5px;max-width:calc(100vw - 32px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast code{color:var(--hazard)}
+</style>
+</head>
+<body>
+<nav class="switcher" id="switcher">
+  <span class="tag">PaySandbox · clickable mockup, no backend</span>
+  <span class="spacer"></span>
+  <a href="#/store" data-area="store">1 · Demo store</a>
+  <a href="#/checkout" data-area="checkout">2 · Hosted checkout</a>
+  <a href="#/developers" data-area="developers">3 · Developers</a>
+  <a href="#/dashboard" data-area="dashboard">4 · Merchant dashboard</a>
+</nav>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const money = n => 'PKR ' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ALPH = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const rid = (p,n=14) => p + '_' + Array.from({length:n},()=>ALPH[Math.floor(Math.random()*ALPH.length)]).join('');
+const b64 = n => btoa(String.fromCharCode(...Array.from({length:n},()=>Math.floor(Math.random()*256))));
+const hex = n => Array.from({length:n},()=>'0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+const MIN = 60000, HOUR = 60*MIN, DAY = 24*HOUR;
+const NOW = Date.now();
+const when = ts => new Date(ts).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const clock = ts => new Date(ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const fmtCard = d => d.replace(/(\d{4})(?=\d)/g,'$1 ');
+let toastTimer;
+function toast(html){ const t=$('#toast'); t.innerHTML=html; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3200); }
+function copy(text){ try{ navigator.clipboard.writeText(text); }catch(e){} toast('Copied'); }
+
+/* ---------- product data ---------- */
+const CARDS = [
+  {num:'4242424242424242', brand:'Visa', outcome:'success', title:'Succeeds', desc:'Approved straight away.', checkout:true},
+  {num:'4000000000009995', brand:'Visa', outcome:'insufficient_funds', title:'Declined: insufficient funds', desc:'Bank declines with insufficient_funds.', checkout:true},
+  {num:'4000000000003220', brand:'Visa', outcome:'3ds', title:'Asks for OTP (3-D Secure)', desc:'Opens a bank OTP screen. 123456 passes, anything else fails.', checkout:true},
+  {num:'4000000000000069', brand:'Visa', outcome:'expired_card', title:'Declined: expired card', desc:'Declined with expired_card, whatever expiry you type.', checkout:true},
+  {num:'5555555555554444', brand:'Mastercard', outcome:'success', title:'Succeeds (Mastercard)', desc:'Same as 4242, different brand.'},
+  {num:'4000000000000002', brand:'Visa', outcome:'generic_decline', title:'Declined: generic', desc:'Bank declines with no reason given.'},
+  {num:'4000000000000127', brand:'Visa', outcome:'incorrect_cvc', title:'Declined: incorrect CVC', desc:'Declined with incorrect_cvc.'},
+  {num:'4000000000000119', brand:'Visa', outcome:'processing_error', title:'Processing error', desc:'Gateway error. Safe to retry with the same Idempotency-Key.'},
+  {num:'4000000000000259', brand:'Visa', outcome:'dispute', title:'Succeeds, then disputed', desc:'Payment succeeds; a dispute opens shortly after.'},
+];
+const DECLINES = {
+  insufficient_funds:{code:'card_declined', decline:'insufficient_funds', msg:'Your card has insufficient funds.'},
+  expired_card:{code:'expired_card', decline:null, msg:'Your card has expired.'},
+  generic_decline:{code:'card_declined', decline:'generic_decline', msg:'Your card was declined.'},
+  incorrect_cvc:{code:'incorrect_cvc', decline:null, msg:"Your card's security code is incorrect."},
+  processing_error:{code:'processing_error', decline:null, msg:'Something went wrong while processing your card. Try again.'},
+  authentication_failed:{code:'authentication_failed', decline:null, msg:'The OTP check failed, so the payment was not made.'},
+};
+const STATUS = {
+  succeeded:['Succeeded','ok'], failed:['Failed','bad'], refunded:['Refunded','neutral'], partially_refunded:['Partially refunded','info'],
+  disputed:['Disputed','violet'], dispute_lost:['Dispute lost','bad'], requires_action:['Needs OTP','warn'],
+};
+const badge = s => `<span class="badge b-${STATUS[s][1]}">${STATUS[s][0]}</span>`;
+const cardOf = num => CARDS.find(c=>c.num===num);
+const CUSTOMERS = [
+  ['Ayesha Khan','ayesha@example.com'],['Bilal Ahmed','bilal@example.com'],['Sara Malik','sara@example.com'],
+  ['Usman Tariq','usman@example.com'],['Hira Siddiqui','hira@example.com'],['Zain Raza','zain@example.com'],['Fatima Noor','fatima@example.com'],
+].map(([name,email])=>({name,email}));
+const KEYS = {pk:'pk_test_51PsBX4kZ9mQe2LrT8vNwYc', sk:'sk_test_51PsBX4kZ9mQe2LrA7dW3xFgJ0pV7Hq2', wh:'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw'};
+const ENDPOINT = 'https://my-store.vercel.app/api/webhooks/paysandbox';
+const RETRY = [0, 1*MIN, 5*MIN, 30*MIN, 2*HOUR, 6*HOUR]; // delay before attempt n
+
+const S = { payments:[], events:[], logs:[], payFilter:'all', custFilter:null, snippet:'react', revealSk:false, revealWh:false, refundOpen:false, co:null };
+
+/* ---------- domain actions (all fake, in-memory) ---------- */
+function payObj(p){
+  const c = cardOf(p.card);
+  return {id:p.id, object:'payment', amount:Math.round(p.amount*100), amount_refunded:Math.round(p.refunded*100), currency:'pkr', status:p.status,
+    customer:{name:p.customer.name, email:p.customer.email}, card:{brand:c.brand.toLowerCase(), last4:p.card.slice(-4)},
+    failure_code:p.failure?p.failure.code:null, decline_code:p.failure?p.failure.decline:null, checkout_session:p.cs, livemode:false};
+}
+function emit(type, object, at, attempts){
+  const e = {id:rid('evt'), type, at, ts:Math.floor(at/1000), sig:`v1,${b64(32)}`,
+    payload:{id:null, object:'event', type, created:Math.floor(at/1000), livemode:false, data:{object:JSON.parse(JSON.stringify(object))}},
+    paymentId: object.object==='payment' ? object.id : object.payment,
+    attempts: attempts || [{at:at+700, code:200, ms:90+Math.floor(Math.random()*180)}]};
+  e.payload.id = e.id;
+  S.events.push(e); return e;
+}
+function evStatus(e){
+  const last = e.attempts[e.attempts.length-1];
+  if (last.code>=200 && last.code<300) return {k:'delivered', label:'Delivered', b:'ok'};
+  if (e.attempts.length>=RETRY.length) return {k:'failed', label:'Failed', b:'bad'};
+  return {k:'retrying', label:'Retrying', b:'warn', next:last.at + RETRY[e.attempts.length]};
+}
+function log(at, method, path, code, note, idem){ S.logs.push({at, method, path, code, note, idem}); }
+
+function createPayment({customer, amount, card, at, outcome, idem, cs}){
+  const p = {id:rid('pay'), cs:cs || rid('cs_test',10), idem: idem || 'order_' + (1000+Math.floor(Math.random()*900)), customer, amount, card, at,
+    status:'succeeded', refunded:0, refunds:[], failure:null, dispute:null, timeline:[]};
+  const T = (dt,text,kind,sub) => p.timeline.push({at:at+dt, text, kind, sub});
+  T(0,'Checkout session created','neutral',`${p.cs} · Idempotency-Key ${p.idem}`);
+  T(20*1000,'Customer submitted card','neutral',`${cardOf(card).brand} •••• ${card.slice(-4)}`);
+  const succeed = (dt) => { T(dt,'Authorized by Sandbox Bank','info'); T(dt+1000,'Payment succeeded','ok'); p.status='succeeded'; emit('payment.succeeded', payObj(p), at+dt+1000); };
+  if (outcome==='3ds_pass'){ T(22*1000,'OTP requested (3-D Secure)','warn'); T(60*1000,'OTP verified','ok'); succeed(61*1000); }
+  else if (outcome==='3ds_pending'){ T(22*1000,'OTP requested (3-D Secure)','warn','Customer has not entered the OTP yet'); p.status='requires_action'; emit('payment.requires_action', payObj(p), at+22*1000); }
+  else if (DECLINES[outcome]){
+    if (outcome==='authentication_failed'){ T(22*1000,'OTP requested (3-D Secure)','warn'); }
+    p.failure = DECLINES[outcome]; p.status='failed';
+    T(outcome==='authentication_failed'?50*1000:22*1000, 'Payment failed', 'bad', `${p.failure.code}${p.failure.decline?' · '+p.failure.decline:''}`);
+    emit('payment.failed', payObj(p), p.timeline[p.timeline.length-1].at);
+  }
+  else succeed(22*1000);
+  log(at,'POST','/v1/checkout_sessions',200,null,p.idem);
+  S.payments.push(p);
+  return p;
+}
+function refund(p, amount, reason, at){
+  const r = {id:rid('re'), amount, reason, at};
+  p.refunds.push(r); p.refunded = +(p.refunded + amount).toFixed(2);
+  if (p.status!=='disputed') p.status = p.refunded >= p.amount ? 'refunded' : 'partially_refunded';
+  p.timeline.push({at, text: p.refunded>=p.amount && p.refunds.length===1 ? 'Refunded in full' : 'Partial refund', kind:'neutral', sub:`${money(amount)} · ${reason.replace(/_/g,' ')} · ${r.id}`});
+  log(at,'POST','/v1/refunds',200,null,'refund_'+p.id.slice(-6)+'_'+p.refunds.length);
+  return emit('refund.created', {id:r.id, object:'refund', payment:p.id, amount:Math.round(amount*100), currency:'pkr', reason, status:'succeeded'}, at);
+}
+function openDispute(p, at, attempts){
+  p.dispute = {id:rid('dp'), reason:'product_not_received', amount:+(p.amount-p.refunded).toFixed(2), status:'needs_response', at, due:at+7*DAY, prev:p.status};
+  p.status = 'disputed';
+  p.timeline.push({at, text:'Dispute opened', kind:'violet', sub:`product_not_received · ${money(p.dispute.amount)} on hold · respond by ${when(p.dispute.due)}`});
+  return emit('dispute.created', {id:p.dispute.id, object:'dispute', payment:p.id, amount:Math.round(p.dispute.amount*100), reason:p.dispute.reason, status:'needs_response'}, at, attempts);
+}
+function closeDispute(p, won, at){
+  const d = p.dispute; d.status = won ? 'won' : 'lost';
+  p.status = won ? d.prev : 'dispute_lost';
+  p.timeline.push({at, text: won ? 'Dispute won' : 'Dispute lost', kind: won?'ok':'bad', sub: won ? 'Evidence accepted. Funds released back to you.' : `${money(d.amount)} returned to the customer.`});
+  return emit('dispute.closed', {id:d.id, object:'dispute', payment:p.id, amount:Math.round(d.amount*100), reason:d.reason, status:d.status}, at);
+}
+
+/* ---------- seed data ---------- */
+(function seed(){
+  const c = i => CUSTOMERS[i];
+  createPayment({customer:c(1), amount:2400, card:'4000000000009995', at:NOW-40*MIN, outcome:'insufficient_funds'});
+  createPayment({customer:c(2), amount:8900, card:'4000000000003220', at:NOW-80*MIN, outcome:'3ds_pass'});
+  createPayment({customer:c(3), amount:1500, card:'4000000000000069', at:NOW-2*HOUR, outcome:'expired_card'});
+  const h = createPayment({customer:c(4), amount:12000, card:'4242424242424242', at:NOW-5*HOUR, outcome:'success'});
+  refund(h, 3000, 'requested_by_customer', NOW-4*HOUR);
+  const z = createPayment({customer:c(5), amount:3200, card:'5555555555554444', at:NOW-DAY, outcome:'success'});
+  refund(z, 3200, 'duplicate', NOW-22*HOUR);
+  const f = createPayment({customer:c(6), amount:6750, card:'4000000000000259', at:NOW-27*HOUR, outcome:'success'});
+  openDispute(f, NOW-26*HOUR, [{at:NOW-26*HOUR+700, code:0, ms:10000, err:'timeout'},{at:NOW-26*HOUR+MIN, code:500, ms:340},{at:NOW-26*HOUR+6*MIN, code:500, ms:310},{at:NOW-26*HOUR+36*MIN, code:200, ms:150}]);
+  createPayment({customer:c(0), amount:950, card:'4000000000003220', at:NOW-2*DAY, outcome:'3ds_pending'});
+  const b = createPayment({customer:c(1), amount:4300, card:'4242424242424242', at:NOW-2*DAY-4*HOUR, outcome:'success'});
+  const be = S.events.find(e=>e.paymentId===b.id && e.type==='payment.succeeded');
+  be.attempts = [{at:be.at+700, code:500, ms:420},{at:be.at+MIN, code:503, ms:120},{at:be.at+6*MIN, code:200, ms:140}];
+  createPayment({customer:c(2), amount:2200, card:'4000000000000119', at:NOW-3*DAY, outcome:'processing_error'});
+  const a = createPayment({customer:c(0), amount:5100, card:'4242424242424242', at:NOW-12*MIN, outcome:'success', idem:'order_1042'});
+  const ae = S.events.find(e=>e.paymentId===a.id);
+  ae.attempts = [{at:ae.at+700, code:500, ms:380},{at:ae.at+MIN, code:502, ms:95},{at:ae.at+6*MIN, code:0, ms:10000, err:'timeout'}]; // endpoint is down: still retrying
+  log(NOW-11*MIN,'POST','/v1/checkout_sessions',200,'Replayed: same Idempotency-Key, same session returned, no second charge','order_1042');
+  log(NOW-9*MIN,'GET','/v1/payments/'+S.payments[S.payments.length-1].id,200);
+  log(NOW-3*HOUR,'POST','/v1/refunds',400,'amount_too_large: refund is more than the amount left');
+  log(NOW-6*HOUR,'POST','/v1/checkout_sessions',401,'invalid_api_key: a publishable key (pk_test_) was used on the server');
+})();
+
+/* ---------- routing ---------- */
+const route = () => (location.hash.replace(/^#\/?/,'') || 'store').split('/');
+function area(r){ return ['store','thanks'].includes(r[0]) ? 'store' : r[0]==='checkout' ? 'checkout' : ['developers','webhooks','logs'].includes(r[0]) ? 'developers' : 'dashboard'; }
+function render(){
+  const r = route();
+  document.querySelectorAll('#switcher a').forEach(a=>a.classList.toggle('on', a.dataset.area===area(r)));
+  const app = $('#app');
+  if (r[0]==='store') app.innerHTML = storeView();
+  else if (r[0]==='thanks') app.innerHTML = thanksView(r[1]);
+  else if (r[0]==='checkout'){ app.innerHTML = checkoutView(); bindCheckout(); }
+  else { app.innerHTML = shell(r); }
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange', render);
+
+/* ---------- 1. hosted checkout ---------- */
+const ORDER = {merchant:'Chai Code Co.', lines:[['Developer hoodie','Size M · Qty 1',4500],['Sticker pack','Qty 2',600]]};
+const orderTotal = () => ORDER.lines.reduce((s,l)=>s+l[2],0);
+function freshCo(keepEmail){ return {cs:rid('cs_test',10), step:'form', email: keepEmail || 'ayesha@example.com', name:'Ayesha Khan', result:null}; }
+S.co = freshCo();
+
+function checkoutView(){
+  const co = S.co;
+  const summary = `
+    <section class="co-summary">
+      <a class="back" href="#/store" title="cancel_url">← Back to store</a>
+      <div class="merchant" style="margin-top:20px"><span class="logo">C</span>${ORDER.merchant} <span class="badge b-warn" style="margin-left:4px">Test</span></div>
+      <div class="muted" style="margin-top:28px;font-size:14px">Pay ${ORDER.merchant}</div>
+      <div class="pay-amount" style="margin-top:2px">${money(orderTotal())}</div>
+      <div class="lines">
+        ${ORDER.lines.map(l=>`<div><span>${l[0]}<small>${l[1]}</small></span><span>${money(l[2])}</span></div>`).join('')}
+        <div class="total"><span>Total due</span><span>${money(orderTotal())}</span></div>
+      </div>
+    </section>`;
+  let main;
+  if (co.step==='result') main = resultView(co.result);
+  else main = `
+    <div class="form">
+      <h2 style="font-size:18px;margin-bottom:18px">Pay with card</h2>
+      <div class="field"><label for="email">Email</label><input class="input" id="email" type="email" autocomplete="email" aria-describedby="email-err" value="${esc(co.email)}"><div class="ferr" id="email-err"></div></div>
+      <div class="field"><label for="cardnum">Card information</label>
+        <div class="cardbox" id="cardbox">
+          <div class="card-num-wrap"><input class="input mono" id="cardnum" inputmode="numeric" autocomplete="off" aria-describedby="cardmsg" placeholder="Pick a test card below" maxlength="19"><span class="brand" id="brand"></span></div>
+          <div class="row"><input class="input" id="exp" value="12 / 29" placeholder="MM / YY" inputmode="numeric" maxlength="7" aria-label="Expiry date, MM / YY" aria-describedby="exp-err"><input class="input" id="cvc" value="123" placeholder="CVC" inputmode="numeric" maxlength="3" aria-label="CVC, 3 digits" aria-describedby="cvc-err"></div>
+        </div>
+        <div id="cardmsg" aria-live="assertive"></div><div class="ferr" id="exp-err"></div><div class="ferr" id="cvc-err"></div>
+      </div>
+      <div class="field"><label for="name">Name on card</label><input class="input" id="name" autocomplete="cc-name" aria-describedby="name-err" value="${esc(co.name)}"><div class="ferr" id="name-err"></div></div>
+      <button class="btn primary block" id="paybtn" disabled>Pay ${money(orderTotal())}</button>
+      <div class="secure">🔒 Test payment. No real money moves, real cards are refused.</div>
+    </div>
+    <div class="testcards">
+      <h3>Test cards · click to fill</h3>
+      ${CARDS.filter(c=>c.checkout).map(c=>`<button class="tc" data-fill="${c.num}"><span class="num">${fmtCard(c.num)}</span><span class="what">${c.title}</span></button>`).join('')}
+      <button class="tc fake" data-fill="5398228347291056"><span class="num">5398 2283 4729 1056</span><span class="what">A real-looking card (gets refused)</span></button>
+      <div class="tc-note">Any future expiry and any 3-digit CVC work. OTP for the 3-D Secure card is <b>123456</b>. <a href="#/cards">All test cards →</a></div>
+    </div>`;
+  return urlbar('https://', 'checkout.paysandbox.dev', '/c/' + co.cs, 'ps') + `<div class="testband" title="This banner is added by PaySandbox and cannot be hidden by the merchant"><span>Test mode · no real payments</span></div>
+    <div class="co">${summary}<section class="co-main">${main}</section></div>`;
+}
+function urlbar(scheme, host, path, who){
+  const tag = who==='ps' ? '<span class="who ps-site">PaySandbox page</span>' : '<span class="who merchant-site">Merchant’s own site</span>';
+  return `<div class="urlbar"><span class="dots"><i></i><i></i><i></i></span><span class="addr">🔒 <span style="overflow:hidden;text-overflow:ellipsis">${scheme}<b>${host}</b>${esc(path)}</span></span>${tag}</div>`;
+}
+const storeHead = `<header class="store-head"><span class="merchant"><span class="logo">C</span>${ORDER.merchant}</span><nav><span>Shop</span><span>About</span><span>Cart (2)</span></nav></header>`;
+function storeView(){
+  return urlbar('https://', 'my-store.vercel.app', '/cart', 'merchant') + `<div class="store">${storeHead}
+    <div class="store-body">
+      <section>
+        <h1>Your cart</h1>
+        ${ORDER.lines.map(l=>`<div class="cart-row"><span class="thumb">${l[0][0]}</span><span class="grow">${l[0]}<small>${l[1]}</small></span><span>${money(l[2])}</span></div>`).join('')}
+        <div class="cart-row" style="border:0;font-weight:700"><span class="grow">Total</span><span>${money(orderTotal())}</span></div>
+        <button class="store-btn" id="gocheckout" onclick="goCheckout()">Checkout · ${money(orderTotal())}</button>
+        <p style="text-align:center;font:13px var(--sans);color:#6f6155;margin-top:10px">Payments by PaySandbox · test mode</p>
+      </section>
+      <aside class="explain">
+        <h3>What happens on Checkout</h3>
+        <ol class="steps">
+          <li><span>This is the merchant’s own site. It has <b>no card fields</b>, so it never touches card numbers.</span></li>
+          <li><span>The button calls the merchant’s server, which creates a checkout session with the secret key and gets back a URL.</span></li>
+          <li><span>The browser goes to that URL on <code>checkout.paysandbox.dev</code> in the same tab, like Tabby or Stripe Checkout.</span></li>
+          <li><span>After paying, PaySandbox sends the customer back to <code>my-store.vercel.app/thanks</code>.</span></li>
+        </ol>
+      </aside>
+    </div></div>`;
+}
+function goCheckout(){
+  const b = $('#gocheckout'); b.disabled = true; b.innerHTML = '<span class="spinner"></span> Redirecting to PaySandbox…';
+  setTimeout(()=>{ S.co = freshCo(); location.hash = '#/checkout'; }, 900);
+}
+function thanksView(id){
+  const p = S.payments.find(x=>x.id===id);
+  if (!p) return storeView();
+  return urlbar('https://', 'my-store.vercel.app', '/thanks?pay=' + p.id, 'merchant') + `<div class="store">${storeHead}
+    <div class="store-body">
+      <section>
+        <h1>Thank you, ${esc(p.customer.name.split(' ')[0])}</h1>
+        <p style="font-size:17px;margin:0 0 6px">Your order <b>#${p.idem.replace('order_','')}</b> is confirmed.</p>
+        <p style="color:#6f6155;margin:0">${money(p.amount)} paid by card •••• ${p.card.slice(-4)}. A receipt is on its way to ${esc(p.customer.email)}.</p>
+        <a class="store-btn" style="text-decoration:none" href="#/store">Continue shopping</a>
+      </section>
+      <aside class="explain">
+        <h3>Behind the scenes</h3>
+        <p style="margin:0 0 10px">PaySandbox redirected here to the merchant’s <code>success_url</code> with <code>?pay=${p.id}</code>.</p>
+        <p style="margin:0 0 14px">The redirect alone is not proof of payment (a customer can close the tab or fake the URL). The merchant’s server marks the order paid when the signed <code>payment.succeeded</code> webhook arrives.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn sm" href="#/payments/${p.id}">Payment in dashboard</a><a class="btn sm" href="#/webhooks">Webhook log</a></div>
+      </aside>
+    </div></div>`;
+}
+function resultView(res){
+  const p = res.payment;
+  if (p.status==='failed') return `
+    <div class="result">
+      <div class="icon bad">✕</div>
+      <h2 tabindex="-1">Payment declined</h2>
+      <p>${p.failure.msg}</p>
+      <div style="margin-top:8px"><code>${p.failure.code}</code>${p.failure.decline?` · <code>${p.failure.decline}</code>`:''}</div>
+      <dl class="kv"><dt>Payment</dt><dd class="mono">${p.id}</dd><dt>Card</dt><dd>•••• ${p.card.slice(-4)}</dd><dt>Webhook</dt><dd><code>payment.failed</code> sent</dd></dl>
+      <div class="actions">
+        <button class="btn primary block" onclick="S.co=freshCo('${esc(S.co.email)}');render()">Try another card</button>
+        <a class="btn" href="#/payments/${p.id}">See it in the merchant dashboard</a>
+      </div>
+    </div>`;
+  return `
+    <div class="result">
+      <div class="icon ok">✓</div>
+      <h2 tabindex="-1">Payment successful</h2>
+      <p>${money(p.amount)} paid to ${ORDER.merchant}</p>
+      <p style="font-size:13px">This was a test payment. No money moved.</p>
+      <dl class="kv"><dt>Payment</dt><dd class="mono">${p.id}</dd><dt>Card</dt><dd>${cardOf(p.card).brand} •••• ${p.card.slice(-4)}</dd>${res.otp?'<dt>3-D Secure</dt><dd>OTP verified</dd>':''}<dt>Webhook</dt><dd><code>payment.succeeded</code> sent</dd></dl>
+      <div class="actions">
+        <button class="btn primary block" onclick="location.hash='#/thanks/${p.id}'">Return to ${ORDER.merchant}</button>
+        <a class="btn" href="#/payments/${p.id}">See it in the merchant dashboard</a>
+        <a class="btn" href="#/store">Back to the demo store</a>
+      </div>
+    </div>`;
+}
+function bindCheckout(){
+  if (S.co.step!=='form') return;
+  const num = $('#cardnum'), box = $('#cardbox'), msg = $('#cardmsg'), btn = $('#paybtn'), brand = $('#brand');
+  const check = () => {
+    const d = num.value.replace(/\D/g,'');
+    num.value = fmtCard(d);
+    const match = CARDS.filter(c=>c.num.startsWith(d));
+    brand.textContent = d.length && match.length ? match[0].brand.toUpperCase() : '';
+    if (d.length>=4 && !match.length){
+      // Never keep a real-looking number around: clear it in the browser, nothing is sent anywhere.
+      num.value = ''; brand.textContent = '';
+      box.classList.add('err');
+      msg.innerHTML = `<div class="msg bad"><b>That isn't a PaySandbox test card.</b> Real card numbers are refused here and cleared from the field. They are never sent, saved or logged. Pick one of the test cards below.</div>`;
+      btn.disabled = true; return;
+    }
+    box.classList.remove('err');
+    msg.innerHTML = '';
+    btn.disabled = !(d.length===16 && match.length===1);
+  };
+  num.addEventListener('input', check);
+  const exp = $('#exp'), cvc = $('#cvc');
+  exp.addEventListener('input', e => {
+    const d = exp.value.replace(/\D/g,'').slice(0,4);
+    exp.value = d.length > 2 || (d.length === 2 && e.inputType !== 'deleteContentBackward') ? d.slice(0,2) + ' / ' + d.slice(2) : d;
+  });
+  cvc.addEventListener('input', () => { cvc.value = cvc.value.replace(/\D/g,''); });
+  ['email','exp','cvc','name'].forEach(f => $('#'+f).addEventListener('input', () => showFieldErr(f, null)));
+  document.querySelectorAll('[data-fill]').forEach(b=>b.addEventListener('click',()=>{ num.value=b.dataset.fill; check(); if(!btn.disabled) btn.focus(); }));
+  btn.addEventListener('click',()=>{
+    const errs = validateCheckout();
+    ['email','exp','cvc','name'].forEach(f => showFieldErr(f, errs[f]));
+    const first = Object.keys(errs)[0];
+    if (first){ $('#'+first).focus(); return; }
+    S.co.email = $('#email').value.trim(); S.co.name = $('#name').value.trim();
+    const card = cardOf(num.value.replace(/\D/g,''));
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Processing…';
+    setTimeout(()=> card.outcome==='3ds' ? showOtp(card) : finish(card, card.outcome==='dispute'?'success':card.outcome), 1100);
+  });
+}
+function validateCheckout(){
+  const errs = {};
+  const email = $('#email').value.trim();
+  if (!email) errs.email = 'Enter your email.';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) errs.email = 'Enter a valid email, like name@example.com.';
+  const m = $('#exp').value.replace(/\s/g,'').match(/^(\d{2})\/?(\d{2})$/);
+  if (!m) errs.exp = 'Enter the expiry date as MM / YY.';
+  else {
+    const mm = +m[1], yy = 2000 + +m[2], now = new Date(), cy = now.getFullYear(), cm = now.getMonth() + 1;
+    if (mm < 1 || mm > 12) errs.exp = 'Enter a month from 01 to 12.';
+    else if (yy < cy || (yy === cy && mm < cm)) errs.exp = 'This expiry date is in the past.';
+    else if (yy > cy + 20) errs.exp = 'Enter a real expiry year.';
+  }
+  if (!/^\d{3}$/.test($('#cvc').value.trim())) errs.cvc = 'Enter the 3-digit CVC from the back of the card.';
+  if (!$('#name').value.trim()) errs.name = 'Enter the name on the card.';
+  return errs;
+}
+function showFieldErr(f, text){
+  const input = $('#'+f), slot = $('#'+f+'-err');
+  slot.textContent = text || '';
+  if (text) input.setAttribute('aria-invalid','true'); else input.removeAttribute('aria-invalid');
+}
+function trapFocus(container, onEscape){
+  container.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){ e.preventDefault(); onEscape(); return; }
+    if (e.key !== 'Tab') return;
+    const items = [...container.querySelectorAll('button, input, a[href]')];
+    const first = items[0], last = items[items.length-1];
+    if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  });
+}
+function showOtp(card){
+  const o = document.createElement('div'); o.className='overlay';
+  o.innerHTML = `<div class="bank" role="dialog" aria-modal="true" aria-labelledby="otp-title" aria-describedby="otp-desc">
+    <header><span>Sandbox Bank</span><small>3-D Secure · test</small></header>
+    <div class="body">
+      <div id="otp-title" style="font-weight:600;margin-bottom:4px">Confirm your payment</div>
+      <div id="otp-desc" class="muted" style="font-size:13.5px">${money(orderTotal())} to ${ORDER.merchant} with card •••• ${card.num.slice(-4)}. We sent a one-time code to your phone.</div>
+      <div class="msg warn" style="margin:14px 0">Test OTP: <b class="mono">123456</b>. Any other code fails the check.</div>
+      <input class="input otp" id="otp" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" aria-label="One-time code, 6 digits">
+      <button class="btn primary block" id="otpok" style="margin-top:12px">Verify</button>
+      <button class="btn block" id="otpno" style="margin-top:8px;font-weight:500">Cancel payment</button>
+    </div></div>`;
+  document.body.appendChild(o); $('#otp').focus();
+  const verify = () => { const ok = $('#otp').value==='123456'; o.remove(); finish(card, ok?'3ds_pass':'authentication_failed', true); };
+  const cancel = () => { o.remove(); finish(card, 'authentication_failed', true); };
+  $('#otpok').onclick = verify;
+  $('#otpno').onclick = cancel;
+  $('#otp').addEventListener('keydown', e => { if (e.key === 'Enter') verify(); });
+  trapFocus(o, cancel);
+}
+function finish(card, outcome, otp){
+  const name = S.co.name || 'Test customer', email = S.co.email || 'test@example.com';
+  let customer = CUSTOMERS.find(c=>c.email===email);
+  if (!customer){ customer = {name, email}; CUSTOMERS.push(customer); }
+  const p = createPayment({customer, amount:orderTotal(), card:card.num, at:Date.now()-62*1000, outcome, cs:S.co.cs});
+  if (card.outcome==='dispute') openDispute(p, Date.now());
+  S.co.step = 'result'; S.co.result = {payment:p, otp};
+  render();
+  $('.result h2').focus();
+  const ev = p.status==='failed' ? 'payment.failed' : 'payment.succeeded';
+  toast(`Webhook <code>${ev}</code> sent to my-store.vercel.app · <a href="#/webhooks" style="color:#f4efe4">view</a>`);
+}
+
+/* ---------- shared shell for dashboard + developers ---------- */
+function shell(r){
+  const page = r[0];
+  const nav = (href,label,keys) => `<a href="#/${href}" class="${keys.includes(page)?'on':''}">${label}</a>`;
+  let body;
+  switch(page){
+    case 'payments': body = r[1] ? paymentDetail(r[1]) : paymentsView(); break;
+    case 'customers': body = customersView(); break;
+    case 'disputes': body = disputesView(); break;
+    case 'cards': body = cardsView(); break;
+    case 'developers': body = developersView(); break;
+    case 'webhooks': body = r[1] ? eventDetail(r[1]) : webhooksView(); break;
+    case 'logs': body = logsView(); break;
+    default: body = overviewView();
+  }
+  return `<div class="shell">
+    <aside class="side">
+      <div class="brandmark"><span class="mark">P</span>PaySandbox</div>
+      <div class="grp">Chai Code Co.</div>
+      ${nav('dashboard','Overview',['dashboard'])}
+      ${nav('payments','Payments',['payments'])}
+      ${nav('customers','Customers',['customers'])}
+      ${nav('disputes','Disputes',['disputes'])}
+      ${nav('cards','Test cards',['cards'])}
+      <div class="grp">Developers</div>
+      ${nav('developers','API keys & code',['developers'])}
+      ${nav('webhooks','Webhooks',['webhooks'])}
+      ${nav('logs','API request log',['logs'])}
+    </aside>
+    <main class="content">${body}</main>
+  </div>`;
+}
+const modePill = `<span class="modepill" title="Live mode does not exist. PaySandbox never moves real money."><span class="toggle"></span>Test mode · live mode not available</span>`;
+const topbar = (title, sub) => `<div class="topline"><div><h1>${title}</h1>${sub?`<p class="sub">${sub}</p>`:''}</div>${modePill}</div>`;
+const sorted = () => [...S.payments].sort((a,b)=>b.at-a.at);
+function payRow(p){
+  return `<tr class="click" onclick="location.hash='#/payments/${p.id}'">
+    <td class="amt">${money(p.amount)}</td><td>${badge(p.status)}</td>
+    <td>${esc(p.customer.name)}<div class="muted" style="font-size:12.5px">${esc(p.customer.email)}</div></td>
+    <td class="mono">•••• ${p.card.slice(-4)}</td><td class="muted">${when(p.at)}</td><td class="mono muted">${p.id}</td></tr>`;
+}
+const payTable = list => list.length ? `<div class="tablewrap" tabindex="0" role="region" aria-label="Scrollable table"><table><thead><tr><th>Amount</th><th>Status</th><th>Customer</th><th>Card</th><th>Date</th><th>Payment ID</th></tr></thead><tbody>${list.map(payRow).join('')}</tbody></table></div>` : `<div class="empty">No payments here yet.</div>`;
+
+/* ---------- 3. merchant dashboard ---------- */
+const STAT_ORDER = ['succeeded','partially_refunded','refunded','failed','requires_action','disputed','dispute_lost'];
+const STAT_COLOR = {succeeded:'var(--ok)', partially_refunded:'var(--info)', refunded:'#a59f92', failed:'var(--bad)', requires_action:'#d59a00', disputed:'var(--violet)', dispute_lost:'#7d2a17'};
+function overviewView(){
+  const P = S.payments;
+  const by = s => P.filter(p=>p.status===s);
+  const sum = l => l.reduce((a,p)=>a+p.amount,0);
+  const gross = P.filter(p=>!['failed','requires_action'].includes(p.status)).reduce((a,p)=>a+p.amount,0);
+  const refunded = P.reduce((a,p)=>a+p.refunded,0);
+  const disputedAmt = P.filter(p=>p.dispute && p.dispute.status!=='won').reduce((a,p)=>a+p.dispute.amount,0);
+  const cards = [
+    ['Net volume', money(gross-refunded-disputedAmt), 'after refunds and disputes', 'var(--ink)', 'payments'],
+    ['Succeeded', money(sum(by('succeeded'))), by('succeeded').length+' payments', STAT_COLOR.succeeded, 'payments'],
+    ['Refunded', money(refunded), P.filter(p=>p.refunded).length+' payments, incl. partial', STAT_COLOR.refunded, 'payments'],
+    ['Failed', money(sum(by('failed'))), by('failed').length+' payments', STAT_COLOR.failed, 'payments'],
+    ['Needs OTP', money(sum(by('requires_action'))), by('requires_action').length+' waiting', STAT_COLOR.requires_action, 'payments'],
+    ['Disputed', money(disputedAmt), (n=>n+(n===1?' dispute':' disputes'))(P.filter(p=>p.dispute).length), STAT_COLOR.disputed, 'disputes'],
+  ];
+  const counts = STAT_ORDER.map(s=>[s,by(s).length]).filter(x=>x[1]);
+  const evs = [...S.events].sort((a,b)=>b.at-a.at).slice(0,5);
+  return topbar('Overview','Totals for Chai Code Co. All amounts are test data.') + `
+    <div class="stats">${cards.map(c=>`<a class="stat" href="#/${c[4]}"><div class="l"><span class="dot" style="background:${c[3]}"></span>${c[0]}</div><div class="v">${c[1]}</div><div class="c">${c[2]}</div></a>`).join('')}</div>
+    <div class="panel"><h2>Payments by status</h2>
+      <div class="stack">${counts.map(([s,n])=>`<span style="width:${n/P.length*100}%;background:${STAT_COLOR[s]}" title="${STATUS[s][0]}: ${n}"></span>`).join('')}</div>
+      <div class="legend">${counts.map(([s,n])=>`<span><span class="dot" style="background:${STAT_COLOR[s]}"></span>${STATUS[s][0]} · ${n}</span>`).join('')}</div>
+    </div>
+    <div class="grid two">
+      <div class="panel"><div class="panel-head"><h2>Recent payments</h2><a class="btn sm" href="#/payments">All payments</a></div>${payTable(sorted().slice(0,5))}</div>
+      <div class="panel"><div class="panel-head"><h2>Recent webhooks</h2><a class="btn sm" href="#/webhooks">Webhooks</a></div>
+        <div class="tablewrap" tabindex="0" role="region" aria-label="Scrollable table"><table><tbody>${evs.map(e=>{const st=evStatus(e);return `<tr class="click" onclick="location.hash='#/webhooks/${e.id}'"><td class="mono">${e.type}</td><td><span class="badge b-${st.b}">${st.label}</span></td><td class="muted">${when(e.at)}</td></tr>`}).join('')}</tbody></table></div>
+      </div>
+    </div>`;
+}
+function paymentsView(){
+  const filters = [['all','All'],['succeeded','Succeeded'],['failed','Failed'],['partially_refunded','Partially refunded'],['refunded','Refunded'],['requires_action','Needs OTP'],['disputed','Disputed']];
+  let list = sorted();
+  if (S.custFilter) list = list.filter(p=>p.customer.email===S.custFilter);
+  const n = k => k==='all' ? list.length : list.filter(p=>p.status===k).length;
+  const shown = S.payFilter==='all' ? list : list.filter(p=>p.status===S.payFilter);
+  const cust = S.custFilter && CUSTOMERS.find(c=>c.email===S.custFilter);
+  return topbar('Payments', cust ? `Showing ${esc(cust.name)} only · <a href="#/payments" onclick="S.custFilter=null">clear</a>` : 'Every test payment, newest first. Click one to see its timeline.') + `
+    <div class="chips">${filters.map(([k,l])=>`<button class="chip ${S.payFilter===k?'on':''}" onclick="S.payFilter='${k}';render()">${l}<span class="n">${n(k)}</span></button>`).join('')}</div>
+    <div class="panel">${payTable(shown)}</div>`;
+}
+function paymentDetail(id){
+  const p = S.payments.find(x=>x.id===id);
+  if (!p) return `<a class="crumb" href="#/payments">← Payments</a><div class="panel">Payment not found.</div>`;
+  const left = +(p.amount - p.refunded).toFixed(2);
+  const canRefund = ['succeeded','partially_refunded'].includes(p.status) && left>0;
+  const canDispute = ['succeeded','partially_refunded'].includes(p.status) && !p.dispute;
+  const evs = S.events.filter(e=>e.paymentId===p.id).sort((a,b)=>b.at-a.at);
+  const c = cardOf(p.card);
+  const kinds = {ok:'c-ok',bad:'c-bad',warn:'c-warn',info:'c-info',violet:'c-violet',neutral:'c-neutral'};
+  const tl = [...p.timeline].sort((a,b)=>a.at-b.at);
+  return `<a class="crumb" href="#/payments">← Payments</a>
+    <div class="topline"><div><div class="hero-amt"><span class="v">${money(p.amount)}</span>${badge(p.status)}</div><p class="sub mono">${p.id}</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${canRefund?`<button class="btn" onclick="S.refundOpen=!S.refundOpen;render()">Refund</button>`:''}
+        ${canDispute?`<button class="btn danger" onclick="openDispute(S.payments.find(x=>x.id==='${p.id}'),Date.now());render();toast('Dispute opened · <code>dispute.created</code> sent')">Simulate dispute</button>`:''}
+      </div></div>
+    ${S.refundOpen && canRefund ? `<div class="panel"><h2>Refund this payment</h2>
+      <div class="inline-form" style="margin-top:0"><div class="rowf">
+        <div class="field"><label for="ramt">Amount (max ${money(left)})</label><input class="input" id="ramt" type="number" min="1" step="0.01" max="${left}" value="${left}"></div>
+        <div class="field"><label for="rreason">Reason</label><select class="input" id="rreason"><option value="requested_by_customer">Requested by customer</option><option value="duplicate">Duplicate</option><option value="fraudulent">Fraudulent</option></select></div>
+        <button class="btn primary" onclick="doRefund('${p.id}')">Refund</button>
+      </div><div id="rerr"></div>
+      <div class="note" style="background:var(--paper)">Enter less than the full amount for a partial refund. Sends a <code>refund.created</code> webhook.</div></div>
+    </div>` : ''}
+    ${p.dispute && p.dispute.status==='needs_response' ? `<div class="panel" style="border-color:#cbb6f0;background:var(--violet-soft)"><div class="panel-head"><h2>Dispute: needs your response</h2><span class="badge b-violet">Respond by ${when(p.dispute.due)}</span></div>
+      <p style="margin:0 0 12px;font-size:14px">The customer says the product never arrived. ${money(p.dispute.amount)} is on hold. In a real gateway you would upload proof of delivery; here you pick the outcome.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="settle('${p.id}',true)">Submit evidence and win</button><button class="btn danger" onclick="settle('${p.id}',false)">Accept and lose</button></div></div>` : ''}
+    <div class="grid two">
+      <div>
+        <div class="panel"><h2>Timeline</h2><ul class="timeline">${tl.map(t=>`<li><span class="pt ${kinds[t.kind]}"></span><div class="t">${t.text}</div><div class="s">${when(t.at)}${t.sub?' · '+esc(t.sub):''}</div></li>`).join('')}</ul></div>
+        <div class="panel"><h2>Webhooks for this payment</h2>
+          <div class="tablewrap" tabindex="0" role="region" aria-label="Scrollable table"><table><tbody>${evs.map(e=>{const st=evStatus(e);return `<tr class="click" onclick="location.hash='#/webhooks/${e.id}'"><td class="mono">${e.type}</td><td><span class="badge b-${st.b}">${st.label}</span></td><td class="muted">${e.attempts.length} attempt${e.attempts.length>1?'s':''}</td><td class="muted">${when(e.at)}</td></tr>`}).join('')}</tbody></table></div></div>
+      </div>
+      <div>
+        <div class="panel"><h2>Details</h2>
+          <dl class="kv" style="margin:0;background:none;padding:0">
+            <dt>Customer</dt><dd>${esc(p.customer.name)}<br><span class="muted">${esc(p.customer.email)}</span></dd>
+            <dt>Card</dt><dd>${c.brand} •••• ${p.card.slice(-4)}<br><span class="muted">Test card: ${c.title}</span></dd>
+            <dt>Refunded</dt><dd>${money(p.refunded)}</dd>
+            ${p.failure?`<dt>Failure</dt><dd><code>${p.failure.code}</code>${p.failure.decline?`<br><code>${p.failure.decline}</code>`:''}</dd>`:''}
+            <dt>Checkout session</dt><dd class="mono">${p.cs}</dd>
+            <dt>Idempotency-Key</dt><dd class="mono">${p.idem}</dd>
+            <dt>Fee</dt><dd>PKR 0.00 <span class="muted">(sandbox)</span></dd>
+            <dt>Created</dt><dd>${when(p.at)}</dd>
+          </dl></div>
+        <div class="panel"><h2>Refunds</h2>${p.refunds.length ? `<div class="tablewrap" tabindex="0" role="region" aria-label="Scrollable table"><table><tbody>${p.refunds.map(r=>`<tr><td class="amt">${money(r.amount)}</td><td class="muted">${r.reason.replace(/_/g,' ')}</td><td class="mono muted">${r.id}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty">No refunds.</div>`}</div>
+      </div>
+    </div>`;
+}
+function doRefund(id){
+  const p = S.payments.find(x=>x.id===id), left = +(p.amount-p.refunded).toFixed(2);
+  const amt = +parseFloat($('#ramt').value).toFixed(2);
+  if (!(amt>0) || amt>left){ $('#rerr').innerHTML = `<div class="msg bad">Enter an amount between PKR 1.00 and ${money(left)}.</div>`; return; }
+  refund(p, amt, $('#rreason').value, Date.now());
+  S.refundOpen = false; render();
+  toast(`${amt<left?'Partial refund':'Refund'} of ${money(amt)} created · <code>refund.created</code> sent`);
+}
+function settle(id, won){ closeDispute(S.payments.find(x=>x.id===id), won, Date.now()); render(); toast(`Dispute ${won?'won':'lost'} · <code>dispute.closed</code> sent`); }
+function customersView(){
+  const rows = CUSTOMERS.map(c=>{ const ps = S.payments.filter(p=>p.customer.email===c.email);
+    const paid = ps.filter(p=>!['failed','requires_action'].includes(p.status)).reduce((a,p)=>a+p.amount-p.refunded,0);
+    const last = ps.length ? Math.max(...ps.map(p=>p.at)) : null;
+    return {c, n:ps.length, paid, last}; }).filter(x=>x.n);
+  return topbar('Customers','Created automatically from the email entered at checkout.') + `<div class="panel"><div class="tablewrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+    <thead><tr><th>Name</th><th>Email</th><th>Payments</th><th>Total paid (net)</th><th>Last payment</th></tr></thead>
+    <tbody>${rows.map(x=>`<tr class="click" onclick="S.custFilter='${x.c.email}';S.payFilter='all';location.hash='#/payments'"><td>${esc(x.c.name)}</td><td class="muted">${esc(x.c.email)}</td><td>${x.n}</td><td class="amt">${money(x.paid)}</td><td class="muted">${when(x.last)}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function disputesView(){
+  const ds = sorted().filter(p=>p.dispute);
+  const st = {needs_response:['Needs response','violet'], won:['Won','ok'], lost:['Lost','bad']};
+  return topbar('Disputes','Open one from any succeeded payment with “Simulate dispute”, or pay with test card 4000 0000 0000 0259.') + `<div class="panel">${ds.length?`<div class="tablewrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+    <thead><tr><th>Amount</th><th>Status</th><th>Reason</th><th>Customer</th><th>Respond by</th><th>Payment</th></tr></thead>
+    <tbody>${ds.map(p=>`<tr class="click" onclick="location.hash='#/payments/${p.id}'"><td class="amt">${money(p.dispute.amount)}</td><td><span class="badge b-${st[p.dispute.status][1]}">${st[p.dispute.status][0]}</span></td><td class="muted">${p.dispute.reason.replace(/_/g,' ')}</td><td>${esc(p.customer.name)}</td><td class="muted">${p.dispute.status==='needs_response'?when(p.dispute.due):'—'}</td><td class="mono muted">${p.id}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No disputes.</div>'}</div>`;
+}
+function cardsView(){
+  return topbar('Test cards','The only card numbers PaySandbox accepts. Anything else is refused in the browser before it is sent.') + `
+    <div class="panel"><div class="tablewrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+      <thead><tr><th>Number</th><th>Brand</th><th>Result</th><th>What happens</th><th></th></tr></thead>
+      <tbody>${CARDS.map(c=>`<tr><td class="mono">${fmtCard(c.num)}</td><td>${c.brand}</td><td><b style="font-weight:600">${c.title}</b></td><td class="muted">${c.desc}</td>
+        <td><button class="btn sm" onclick="copy('${c.num}')">Copy</button></td></tr>`).join('')}</tbody></table></div>
+      <div class="note">Expiry: any future date. CVC: any 3 digits. OTP for 3-D Secure: <b class="mono">123456</b>. Amounts and currency come from your checkout session.</div>
+    </div>`;
+}
+
+/* ---------- 2. developers ---------- */
+const SNIPPETS = {
+  react:['React (Next.js)',`// app/checkout/page.tsx
+'use client';
+import { PaySandboxButton } from '@paysandbox/react';
+
+export default function CheckoutPage() {
+  return (
+    <PaySandboxButton
+      publishableKey={process.env.NEXT_PUBLIC_PAYSANDBOX_PK} // pk_test_…
+      // your server creates the session with the secret key (next tab)
+      createSession={() => fetch('/api/checkout', { method: 'POST' }).then((r) => r.json())}
+      onSuccess={(payment) => router.push('/thanks?pay=' + payment.id)}
+    >
+      Pay PKR 5,100
+    </PaySandboxButton>
+  );
+}`],
+  server:['Server route',`// app/api/checkout/route.ts
+import PaySandbox from '@paysandbox/node';
+
+const ps = new PaySandbox(process.env.PAYSANDBOX_SK!); // sk_test_…, server only
+
+export async function POST() {
+  const session = await ps.checkoutSessions.create(
+    {
+      amount: 510000, // PKR 5,100.00 in paisa
+      currency: 'pkr',
+      success_url: 'https://my-store.vercel.app/thanks?pay={PAYMENT_ID}',
+      cancel_url: 'https://my-store.vercel.app/cart',
+    },
+    { idempotencyKey: 'order_1042' } // same key twice = same session, never a double charge
+  );
+  return Response.json({ url: session.url });
+}`],
+  rest:['REST (curl)',`curl https://api.paysandbox.dev/v1/checkout_sessions \\
+  -u sk_test_…: \\
+  -H "Idempotency-Key: order_1042" \\
+  -d amount=510000 \\
+  -d currency=pkr \\
+  -d success_url="https://my-store.vercel.app/thanks" \\
+  -d cancel_url="https://my-store.vercel.app/cart"
+
+# 200 OK
+{
+  "id": "cs_test_a1B2c3D4e5",
+  "object": "checkout_session",
+  "url": "https://checkout.paysandbox.dev/c/cs_test_a1B2c3D4e5",
+  "amount": 510000,
+  "currency": "pkr",
+  "status": "open",
+  "livemode": false
+}`],
+  webhook:['Verify webhook',`// app/api/webhooks/paysandbox/route.ts
+// PaySandbox follows the Standard Webhooks spec (standardwebhooks.com),
+// so the official open-source library verifies it. No PaySandbox SDK needed.
+import { Webhook } from 'standardwebhooks';
+
+const wh = new Webhook(process.env.PAYSANDBOX_WHSEC!); // whsec_…
+
+export async function POST(req: Request) {
+  const body = await req.text(); // raw body: the signature is over these exact bytes
+  const event = wh.verify(body, Object.fromEntries(req.headers)) as PaySandboxEvent;
+  // reads webhook-id, webhook-timestamp, webhook-signature;
+  // throws on a bad signature or a timestamp more than 5 minutes off
+
+  if (event.type === 'payment.succeeded') {
+    await markOrderPaid(event.data.object.id); // may arrive twice: make it idempotent
+  }
+  return new Response('ok'); // any 2xx stops retries
+}`],
+};
+const hl = code => esc(code).replace(/(\/\/[^\n]*|#[^\n]*)/g,'<span class="cm">$1</span>');
+function developersView(){
+  const sk = S.revealSk ? KEYS.sk : KEYS.sk.slice(0,12)+'••••••••••••••••'+KEYS.sk.slice(-4);
+  return topbar('API keys & code','Everything a developer needs to plug PaySandbox into a Next.js site, an MVP or a store.') + `
+    <div class="panel"><div class="panel-head"><h2>API keys</h2><button class="btn sm" onclick="toast('Would create a new secret key and expire the old one in 24 hours')">Roll secret key</button></div>
+      <div class="keyrow"><div class="k"><b>Publishable key</b><small>Safe in the browser. Starts with pk_test_.</small></div><span class="keyval">${KEYS.pk}</span><button class="btn sm" onclick="copy(KEYS.pk)">Copy</button></div>
+      <div class="keyrow"><div class="k"><b>Secret key</b><small>Server only. Never commit it or ship it to the browser.</small></div><span class="keyval">${sk}</span>
+        <button class="btn sm" onclick="S.revealSk=!S.revealSk;render()">${S.revealSk?'Hide':'Reveal'}</button><button class="btn sm" onclick="copy(KEYS.sk)">Copy</button></div>
+      <div class="note">There are only test keys. PaySandbox has no live mode, so a leaked key can never move real money.</div>
+    </div>
+    <div class="grid two">
+      <div class="panel" style="padding:0;overflow:hidden">
+        <div style="padding:18px 18px 0"><h2>Integration</h2></div>
+        <div class="tabs" style="padding:0 18px">${Object.entries(SNIPPETS).map(([k,v])=>`<button class="${S.snippet===k?'on':''}" onclick="S.snippet='${k}';render()">${v[0]}</button>`).join('')}</div>
+        <div style="position:relative"><button class="btn sm" style="position:absolute;right:10px;top:10px" onclick="copy(SNIPPETS[S.snippet][1])">Copy</button>
+        <pre class="code" tabindex="0" aria-label="Code">${hl(SNIPPETS[S.snippet][1])}</pre></div>
+      </div>
+      <div class="panel"><h2>How a payment flows</h2>
+        <ol class="steps">
+          <li><span>Your server creates a checkout session with the secret key and an <code>Idempotency-Key</code>.</span></li>
+          <li><span>The customer pays on the hosted page. The TEST MODE banner is always on it.</span></li>
+          <li><span>We send them back to your <code>success_url</code> or <code>cancel_url</code>.</span></li>
+          <li><span>We POST a signed webhook (<code>payment.succeeded</code> or <code>payment.failed</code>) to your endpoint.</span></li>
+          <li><span>Your server checks the signature and marks the order paid. No 2xx? We retry: 1 min, 5 min, 30 min, 2 h, 6 h.</span></li>
+        </ol>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><a class="btn primary" href="#/checkout">Try the hosted checkout</a><a class="btn" href="#/webhooks">See webhooks</a></div>
+      </div>
+    </div>`;
+}
+function webhooksView(){
+  const evs = [...S.events].sort((a,b)=>b.at-a.at);
+  const wh = S.revealWh ? KEYS.wh : 'whsec_••••••••••••••••••••';
+  const types = ['payment.succeeded','payment.failed','payment.requires_action','refund.created','dispute.created','dispute.closed'];
+  return topbar('Webhooks','We sign every event and retry until your endpoint answers with a 2xx.') + `
+    <div class="panel"><div class="panel-head"><h2>Endpoint</h2><span class="badge b-ok">Enabled</span></div>
+      <div class="keyrow"><div class="k"><b>URL</b><small>Where events are POSTed</small></div><span class="keyval">${ENDPOINT}</span></div>
+      <div class="keyrow"><div class="k"><b>Events</b><small>What this endpoint receives</small></div><span style="display:flex;flex-wrap:wrap;gap:6px">${types.map(t=>`<code class="keyval" style="padding:3px 8px">${t}</code>`).join('')}</span></div>
+      <div class="keyrow"><div class="k"><b>Signing secret</b><small>Signs the <span class="mono">webhook-signature</span> header (Standard Webhooks)</small></div><span class="keyval">${wh}</span><button class="btn sm" onclick="S.revealWh=!S.revealWh;render()">${S.revealWh?'Hide':'Reveal'}</button></div>
+      <div class="keyrow"><div class="k"><b>Send a test event</b><small>Fires a sample event at your endpoint</small></div>
+        <select class="input" id="testtype" aria-label="Event type to send" style="width:auto">${types.map(t=>`<option>${t}</option>`).join('')}</select><button class="btn sm primary" onclick="sendTest()">Send</button></div>
+    </div>
+    <div class="panel"><h2>Event log</h2><div class="tablewrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+      <thead><tr><th>Event</th><th>Delivery</th><th>Attempts</th><th>Last response</th><th>Created</th><th>Event ID</th></tr></thead>
+      <tbody>${evs.map(e=>{const st=evStatus(e), last=e.attempts[e.attempts.length-1];
+        return `<tr class="click" onclick="location.hash='#/webhooks/${e.id}'"><td class="mono">${e.type}</td><td><span class="badge b-${st.b}">${st.label}</span>${st.k==='retrying'?`<div class="muted" style="font-size:12px">next ${when(st.next)}</div>`:''}</td><td>${e.attempts.length}</td><td class="mono ${last.code>=200&&last.code<300?'':'muted'}">${last.code||'timeout'}</td><td class="muted">${when(e.at)}</td><td class="mono muted">${e.id}</td></tr>`}).join('')}</tbody></table></div></div>`;
+}
+function sendTest(){
+  const type = $('#testtype').value, p = sorted()[0];
+  const obj = type.startsWith('refund') ? {id:rid('re'), object:'refund', payment:p.id, amount:100000, currency:'pkr', reason:'requested_by_customer', status:'succeeded'}
+    : type.startsWith('dispute') ? {id:rid('dp'), object:'dispute', payment:p.id, amount:100000, reason:'product_not_received', status: type==='dispute.closed'?'won':'needs_response'}
+    : payObj(p);
+  emit(type, obj, Date.now()); render(); toast(`Test <code>${type}</code> delivered · 200 OK`);
+}
+function eventDetail(id){
+  const e = S.events.find(x=>x.id===id);
+  if (!e) return `<a class="crumb" href="#/webhooks">← Webhooks</a><div class="panel">Event not found.</div>`;
+  const st = evStatus(e), body = JSON.stringify(e.payload, null, 2);
+  return `<a class="crumb" href="#/webhooks">← Webhooks</a>
+    <div class="topline"><div><div class="hero-amt"><span class="v mono" style="font-size:22px">${e.type}</span><span class="badge b-${st.b}">${st.label}</span></div><p class="sub mono">${e.id}</p></div>
+      <button class="btn" onclick="resend('${e.id}')">Resend now</button></div>
+    <div class="grid two">
+      <div class="panel" style="padding:0;overflow:hidden"><div style="padding:18px 18px 12px"><h2 style="margin:0">Request we sent</h2></div>
+        <pre class="code" tabindex="0" aria-label="Code">${esc(`POST ${new URL(ENDPOINT).pathname}
+Host: ${new URL(ENDPOINT).host}
+Content-Type: application/json
+webhook-id: ${e.id}
+webhook-timestamp: ${e.ts}
+webhook-signature: ${e.sig}
+
+${body}`)}</pre></div>
+      <div>
+        <div class="panel"><h2>Delivery attempts</h2><ul class="attempts">${e.attempts.map((a,i)=>`<li><span class="badge b-${a.code>=200&&a.code<300?'ok':'bad'}">${a.code||'timeout'}</span><span>Attempt ${i+1}</span><span class="muted">${when(a.at)} · ${clock(a.at)}</span><span class="muted">${a.ms} ms</span></li>`).join('')}
+          ${st.k==='retrying'?`<li><span class="badge b-warn">scheduled</span><span>Attempt ${e.attempts.length+1}</span><span class="muted">${when(st.next)}</span></li>`:''}</ul>
+          <div class="note">Retry schedule: 1 min, 5 min, 30 min, 2 h, 6 h, then the event is marked failed. Same <span class="mono">webhook-id</span> on every attempt, so your handler can skip duplicates.</div></div>
+        <div class="panel"><h2>Signature</h2>
+          <dl class="kv" style="margin:0;background:none;padding:0"><dt>Spec</dt><dd><a href="https://www.standardwebhooks.com/" target="_blank" rel="noopener">Standard Webhooks</a></dd><dt>webhook-id</dt><dd class="mono">${e.id}</dd><dt>webhook-timestamp</dt><dd class="mono">${e.ts}</dd><dt>webhook-signature</dt><dd class="mono">${e.sig}</dd><dt>Signed content</dt><dd><span class="mono">id + "." + timestamp + "." + body</span></dd><dt>Algorithm</dt><dd>HMAC-SHA256, base64, key = secret after <span class="mono">whsec_</span></dd></dl>
+          <div class="note">Verify with any official Standard Webhooks library (JS, Python, Go, PHP, Ruby, Java…). Reject if the timestamp is more than 5 minutes off, to stop replayed requests.</div>
+          ${e.paymentId?`<div style="margin-top:12px"><a class="btn sm" href="#/payments/${e.paymentId}">Open payment</a></div>`:''}</div>
+      </div>
+    </div>`;
+}
+function resend(id){ const e=S.events.find(x=>x.id===id); e.attempts.push({at:Date.now(), code:200, ms:110}); render(); toast('Resent · 200 OK'); }
+function logsView(){
+  const L = [...S.logs].sort((a,b)=>b.at-a.at);
+  return topbar('API request log','Every call your server made with its key. Useful for seeing idempotent replays and errors.') + `<div class="panel"><div class="tablewrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+    <thead><tr><th>Status</th><th>Request</th><th>Idempotency-Key</th><th>Note</th><th>Time</th></tr></thead>
+    <tbody>${L.map(l=>`<tr><td><span class="badge b-${l.code<300?'ok':'bad'}">${l.code}</span></td><td class="mono">${l.method} ${l.path}</td><td class="mono muted">${l.idem||'—'}</td><td class="muted" style="white-space:normal;min-width:220px">${l.note||''}</td><td class="muted">${when(l.at)}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+
+render();
+</script>
+</body>
+</html>
