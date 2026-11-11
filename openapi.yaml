@@ -51,6 +51,26 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Payment' } } } }
         '404': { $ref: '#/components/responses/Error' }
+  /refunds:
+    post:
+      summary: Refund all or part of a payment
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema: { type: string, minLength: 1, maxLength: 255 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRefund' }
+      responses:
+        '200': { description: Created (or replayed), content: { application/json: { schema: { $ref: '#/components/schemas/Refund' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
   /events/{id}:
     get:
       summary: Retrieve an event (the same envelope as webhook bodies)
@@ -106,6 +126,27 @@ components:
         payment: { type: [string, 'null'] }
         expires_at: { type: integer, description: Unix seconds }
         created: { type: integer, description: Unix seconds }
+        livemode: { const: false }
+    CreateRefund:
+      type: object
+      required: [payment, reason]
+      properties:
+        payment: { type: string, description: The pay_ ID to refund }
+        amount: { type: integer, minimum: 1, description: Paisa; defaults to the amount left }
+        reason: { enum: [requested_by_customer, duplicate, fraudulent] }
+    Refund:
+      type: object
+      additionalProperties: false
+      required: [id, object, amount, currency, payment, reason, status, created, livemode]
+      properties:
+        id: { type: string, pattern: '^re_[0-9A-Za-z]{24}$' }
+        object: { const: refund }
+        amount: { type: integer, minimum: 1 }
+        currency: { const: pkr }
+        payment: { type: string }
+        reason: { enum: [requested_by_customer, duplicate, fraudulent] }
+        status: { const: succeeded }
+        created: { type: integer }
         livemode: { const: false }
     Event:
       type: object
