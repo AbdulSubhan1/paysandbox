@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 21 * * *' # nightly full E2E (02:00 Pakistan time)
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: check
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      CI: '1'
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      DATABASE_URL_E2E: postgres://postgres:postgres@localhost:5432/postgres
+      E2E_AUTH_BYPASS: '1'
+      APP_URL: http://localhost:3090
+      BETTER_AUTH_URL: http://localhost:3090
+      BETTER_AUTH_SECRET: e2e-only-secret-not-used-anywhere-else-0000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+      - run: pnpm --filter web exec next build
+      # Pull requests run the @smoke set; the nightly schedule runs everything.
+      - run: pnpm --filter web exec playwright test ${{ github.event_name == 'schedule' && ' ' || '--grep @smoke' }}
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
