@@ -24,8 +24,10 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      githubUserId: { type: 'string', required: false, input: false },
-      githubLogin: { type: 'string', required: false, input: false },
+      // `input: true` is needed for Better Auth to keep these from mapProfileToUser on sign-up; the update hook
+      // below strips them so a signed-in user can never change their GitHub identity.
+      githubUserId: { type: 'string', required: false, input: true },
+      githubLogin: { type: 'string', required: false, input: true },
       isAdmin: { type: 'boolean', required: false, defaultValue: false, input: false },
     },
   },
@@ -44,6 +46,10 @@ export const auth = betterAuth({
           if (!allowed) return false;
           return { data: { ...user, githubLogin: login.toLowerCase() || null, isAdmin: adminIds.includes(githubId) } };
         },
+      },
+      update: {
+        // Better Auth merges the returned data over the update, so the fields are blanked, not just left out.
+        before: async (user) => ({ data: { ...user, githubUserId: undefined, githubLogin: undefined } }),
       },
     },
   },
