@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { Toaster } from '@/components/ui/sonner';
 import { requireUser } from '@/lib/auth/session';
 
 async function SignedInAs() {
@@ -23,6 +24,7 @@ export default function DashboardLayout({ children }: LayoutProps<'/dashboard'>)
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-10">{children}</main>
+      <Toaster />
     </div>
   );
 }
