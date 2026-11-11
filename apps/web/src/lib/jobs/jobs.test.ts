@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '@/lib/db/client';
 import { jobs } from '@/lib/db/schema';
 import { createTestDb } from '@/test/db';
@@ -62,9 +62,16 @@ describe('jobs outbox', () => {
   it('stops claiming jobs once the deadline has passed (the cron must finish inside its time limit)', async () => {
     await enqueueJob(db, { merchantId, kind: 'expire_session', refId: 'a', runAt: plus(-10), now });
     await enqueueJob(db, { merchantId, kind: 'expire_session', refId: 'b', runAt: plus(-10), now });
-    const slow = handlersWith({ expire_session: async () => (await new Promise((r) => setTimeout(r, 30)), { done: true }) });
-    expect(await runDueJobs(db, now, slow, { deadline: Date.now() + 10 })).toBe(1);
-    expect(await runDueJobs(db, now, slow, { deadline: Date.now() - 1 })).toBe(0);
+    // A controlled clock: the first job "takes" two minutes, so the deadline passes during it, however slow the machine.
+    let clock = Date.now();
+    const spy = vi.spyOn(Date, 'now').mockImplementation(() => clock);
+    try {
+      const slow = handlersWith({ expire_session: async () => ((clock += 120_000), { done: true }) });
+      expect(await runDueJobs(db, now, slow, { deadline: clock + 60_000 })).toBe(1);
+      expect(await runDueJobs(db, now, slow, { deadline: clock - 1 })).toBe(0);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('gives each job in a batch a full lease from when it is claimed, not from when the batch started', async () => {
