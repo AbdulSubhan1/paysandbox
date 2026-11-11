@@ -79,3 +79,27 @@ describe('withApi daily cap (PS-AUTH-010)', () => {
     expect(n).toBe(1000);
   });
 });
+
+describe('withApi idempotency', () => {
+  it('replays a POST with the same Idempotency-Key and runs the handler once', async () => {
+    let runs = 0;
+    const create = withApi(
+      async (_ctx, req) => ({ status: 200, body: { run: ++runs, got: await req.json() } }),
+      { idempotent: true },
+    );
+    const post = () =>
+      create(
+        new Request('http://localhost/api/v1/things', {
+          method: 'POST',
+          headers: { authorization: `Bearer ${keys.sk}`, 'idempotency-key': 'order_1042', 'content-type': 'application/json' },
+          body: JSON.stringify({ amount: 510000 }),
+        }),
+        { params: Promise.resolve({}) },
+      );
+    const first = await post();
+    const second = await post();
+    expect(await second.json()).toEqual(await first.json());
+    expect(second.headers.get('idempotent-replayed')).toBe('true');
+    expect(runs).toBe(1);
+  });
+});

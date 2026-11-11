@@ -2,6 +2,7 @@ import type { Db } from '@/lib/db/client';
 import { getDb } from '@/lib/db/client';
 import { newId } from '@/lib/ids';
 import { findMerchantBySecretKey } from '@/lib/keys/keys';
+import { withIdempotency } from '@/lib/idempotency/idempotency';
 import { ApiError, errorBody } from './errors';
 import { logApiRequest } from './request-log';
 import { consumeUsage, dailyLimitError } from './usage';
@@ -37,12 +38,28 @@ export async function authenticateRequest(db: Db, authorization: string | null, 
 
 const internalError = () => new ApiError(500, 'api_error', 'internal_error', 'Something went wrong on our side. Try again.');
 
+/** Reads a copy of the body so the handler can still read the original. Invalid JSON hashes as its raw text. */
+async function readJson(req: Request): Promise<unknown> {
+  const text = await req.clone().text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function errorCodeOf(body: unknown): string | null {
+  const code = (body as { error?: { code?: unknown } } | null)?.error?.code;
+  return typeof code === 'string' ? code : null;
+}
+
 function toResponse(r: ApiResponse): Response {
   return Response.json(r.body, { status: r.status, headers: r.headers });
 }
 
-/** Auth → daily cap → handler → request log. Refused-by-cap requests are not logged. */
-export function withApi(handler: ApiHandler) {
+/** Auth → daily cap → idempotency (POST) → handler → request log. Refused-by-cap requests are not logged. */
+export function withApi(handler: ApiHandler, opts: { idempotent?: boolean } = {}) {
   return async (req: Request, route: RouteContext): Promise<Response> => {
     const started = Date.now();
     const now = new Date();
@@ -63,16 +80,33 @@ export function withApi(handler: ApiHandler) {
       return toResponse({ status: err.status, body: errorBody(err), headers: err.headers });
     }
 
+    const ctx: ApiContext = { db, merchantId, now, requestId: newId('req'), idempotencyKey };
+    const params = await route.params;
+    // ApiErrors become responses here, so idempotency can store 4xx results; unexpected errors still throw.
+    const run = async (): Promise<ApiResponse> => {
+      try {
+        return await handler(ctx, req, params);
+      } catch (e) {
+        if (e instanceof ApiError) return { status: e.status, body: errorBody(e), headers: e.headers };
+        throw e;
+      }
+    };
+
     let response: ApiResponse;
-    let errorCode: string | null = null;
     try {
-      response = await handler({ db, merchantId, now, requestId: newId('req'), idempotencyKey }, req, await route.params);
+      response = opts.idempotent
+        ? await withIdempotency(
+            db,
+            { merchantId, key: idempotencyKey, method: req.method, path, body: await readJson(req), now },
+            run,
+          )
+        : await run();
     } catch (e) {
       const err = e instanceof ApiError ? e : internalError();
       if (!(e instanceof ApiError)) console.error('api_error', req.method, path, e instanceof Error ? e.name : 'unknown');
       response = { status: err.status, body: errorBody(err), headers: err.headers };
-      errorCode = err.code;
     }
+    const errorCode = response.status >= 400 ? errorCodeOf(response.body) : null;
 
     await logApiRequest(db, {
       merchantId,
