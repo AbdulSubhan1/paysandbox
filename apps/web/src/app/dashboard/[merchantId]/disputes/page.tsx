@@ -5,7 +5,7 @@ import { listDisputes } from '@/lib/dashboard/disputes';
 import { getDb } from '@/lib/db/client';
 import { formatPkt } from '@/lib/format';
 import { requireProject } from '@/lib/merchants/require-project';
-import { formatPkr } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 type Props = PageProps<'/dashboard/[merchantId]/disputes'>;
@@ -18,7 +18,7 @@ const BADGE = {
 
 async function Disputes({ params }: Props) {
   const { merchantId } = await params;
-  await requireProject(merchantId);
+  const { merchant } = await requireProject(merchantId);
   const rows = await listDisputes(getDb(), merchantId);
   return (
     <div className="flex flex-col gap-5">
@@ -43,7 +43,7 @@ async function Disputes({ params }: Props) {
             <tbody>
               {rows.map((d) => (
                 <tr key={d.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2 font-semibold whitespace-nowrap tabular-nums">{formatPkr(d.amount)}</td>
+                  <td className="px-4 py-2 font-semibold whitespace-nowrap tabular-nums">{formatMoney(d.amount, merchant.currency)}</td>
                   <td className="px-4 py-2">
                     <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap', BADGE[d.status][1])}>
                       {BADGE[d.status][0]}

@@ -80,7 +80,7 @@ export function toSessionObject(row: CheckoutSessionRow, now: Date) {
     object: 'checkout_session' as const,
     url: `${appUrl()}/c/${row.id}`,
     amount: row.amount,
-    currency: 'pkr' as const,
+    currency: row.currency,
     line_items: row.lineItems,
     customer_email: row.customerEmail,
     success_url: row.successUrl,

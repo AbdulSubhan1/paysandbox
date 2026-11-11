@@ -10,7 +10,7 @@ async function checkout() {
   if (!isE2eMode()) notFound();
   const now = new Date();
   const session = await createCheckoutSession(
-    { db: getDb(), merchantId: E2E.merchantA.id, now, requestId: 'req_e2e', idempotencyKey: null },
+    { db: getDb(), merchantId: E2E.merchantA.id, now, requestId: 'req_e2e', idempotencyKey: null, currency: 'pkr' },
     {
       amount: 510000,
       currency: 'pkr',

@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { formatPkt } from '@/lib/format';
 import type { DashboardPaymentRow } from '@/lib/dashboard/overview';
-import { formatPkr } from '@/lib/money';
+import type { Currency } from '@/lib/currency';
+import { formatMoney } from '@/lib/money';
 import { StatusBadge } from './StatusBadge';
 
 /** Amount · Status · Customer · Card · Date · Payment ID; the amount links to the detail page. */
-export function PaymentsTable({ merchantId, rows }: { merchantId: string; rows: DashboardPaymentRow[] }) {
+export function PaymentsTable({ merchantId, currency, rows }: { merchantId: string; currency: Currency; rows: DashboardPaymentRow[] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card" tabIndex={0} role="region" aria-label="Payments">
       <table className="w-full text-sm">
@@ -23,7 +24,7 @@ export function PaymentsTable({ merchantId, rows }: { merchantId: string; rows: 
             <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/50">
               <td className="px-4 py-2 font-semibold whitespace-nowrap tabular-nums">
                 <Link href={`/dashboard/${merchantId}/payments/${p.id}`} className="hover:underline">
-                  {formatPkr(p.amount)}
+                  {formatMoney(p.amount, currency)}
                 </Link>
               </td>
               <td className="px-4 py-2">

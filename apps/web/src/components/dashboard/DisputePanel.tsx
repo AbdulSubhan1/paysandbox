@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { formatPkt } from '@/lib/format';
-import { formatPkr } from '@/lib/money';
+import type { Currency } from '@/lib/currency';
+import { formatMoney } from '@/lib/money';
 import type { ActionResult } from './RefundForm';
 
 /** Solid red with white text: the soft destructive variant is under 4.5:1 contrast on tinted panels. */
@@ -31,7 +32,7 @@ export function DisputePanel({
   dispute,
   onClose,
 }: {
-  dispute: { amount: number; reason: string; respondBy: Date };
+  dispute: { amount: number; currency: Currency; reason: string; respondBy: Date };
   onClose: (outcome: 'won' | 'lost') => Promise<ActionResult>;
 }) {
   const [sending, setSending] = useState(false);
@@ -57,7 +58,7 @@ export function DisputePanel({
         <span className="text-sm text-violet">Respond by {formatPkt(dispute.respondBy)}</span>
       </div>
       <p className="text-sm">
-        {REASON_TEXT[dispute.reason] ?? `Reason: ${dispute.reason}.`} {formatPkr(dispute.amount)} is on hold. In a real gateway you would
+        {REASON_TEXT[dispute.reason] ?? `Reason: ${dispute.reason}.`} {formatMoney(dispute.amount, dispute.currency)} is on hold. In a real gateway you would
         upload proof; here you pick the outcome. If you don&apos;t answer by the date above, the dispute is lost automatically.
       </p>
       <div className="flex flex-wrap gap-2">
@@ -68,7 +69,7 @@ export function DisputePanel({
           <AlertDialogTrigger render={<Button className={SOLID_DANGER} disabled={sending} />}>Accept and lose</AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Accept the dispute and lose {formatPkr(dispute.amount)}?</AlertDialogTitle>
+              <AlertDialogTitle>Accept the dispute and lose {formatMoney(dispute.amount, dispute.currency)}?</AlertDialogTitle>
               <AlertDialogDescription>The payment becomes “Dispute lost” and the money stays with the customer. This can&apos;t be undone.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

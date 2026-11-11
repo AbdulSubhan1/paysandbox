@@ -1,5 +1,8 @@
 import { consumeUsage } from '@/lib/api/usage';
+import { eq } from 'drizzle-orm';
+import type { Currency } from '@/lib/currency';
 import type { Db } from '@/lib/db/client';
+import { merchants } from '@/lib/db/schema';
 import { toDisputeObject } from '@/lib/disputes/disputes';
 import { type EventType, recordEvent } from '@/lib/events/record';
 import { toPaymentObject } from '@/lib/payments/objects';
@@ -10,16 +13,21 @@ export { TEST_EVENT_TYPES } from './test-event-types';
 
 const testId = (prefix: string) => `${prefix}_test${'0'.repeat(20)}`;
 
-/** A sample object of the right shape for each event type, built with the same serializers as real events. */
-function sampleObject(type: EventType, now: Date): object {
+/**
+ * A sample object of the right shape for each event type, built with the same serializers as real events, in the
+ * project's currency (PKR 5,100.00, or 29.99 in other currencies).
+ */
+function sampleObject(type: EventType, now: Date, currency: Currency): object {
+  const amount = currency === 'pkr' ? 510000 : 2999;
   const payment = {
     id: testId('pay'),
     merchantId: '',
     checkoutSessionId: testId('cs_test'),
     customerId: testId('cus'),
     attemptId: 'test',
-    amount: 510000,
+    amount,
     amountRefunded: 0,
+    currency,
     status: 'succeeded' as const,
     cardBrand: 'visa',
     cardLast4: '4242',
@@ -35,7 +43,8 @@ function sampleObject(type: EventType, now: Date): object {
     id: testId('dp'),
     merchantId: '',
     paymentId: payment.id,
-    amount: 510000,
+    amount,
+    currency,
     reason: 'fraudulent',
     status: 'needs_response' as const,
     previousPaymentStatus: 'succeeded' as const,
@@ -51,7 +60,7 @@ function sampleObject(type: EventType, now: Date): object {
     case 'payment.requires_action':
       return toPaymentObject({ ...payment, status: 'requires_action' }, customer);
     case 'refund.created':
-      return toRefundObject({ id: testId('re'), merchantId: '', paymentId: payment.id, amount: 510000, reason: 'requested_by_customer', status: 'succeeded', createdAt: now });
+      return toRefundObject({ id: testId('re'), merchantId: '', paymentId: payment.id, amount, currency, reason: 'requested_by_customer', status: 'succeeded', createdAt: now });
     case 'dispute.created':
       return toDisputeObject(dispute);
     case 'dispute.closed':
@@ -72,6 +81,7 @@ export async function sendTestEvent(
   return db.transaction(async (t) => {
     const tx = t as unknown as Db;
     if (!(await consumeUsage(tx, merchantId, 'test_events', now)).allowed) return { ok: false, reason: 'daily_limit' } as const;
-    return { ok: true, eventId: await recordEvent(tx, { merchantId, type, payload: sampleObject(type, now), now }) } as const;
+    const [{ currency }] = await tx.select({ currency: merchants.currency }).from(merchants).where(eq(merchants.id, merchantId));
+    return { ok: true, eventId: await recordEvent(tx, { merchantId, type, payload: sampleObject(type, now, currency), now }) } as const;
   });
 }

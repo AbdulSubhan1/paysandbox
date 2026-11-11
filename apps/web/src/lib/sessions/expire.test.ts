@@ -27,7 +27,7 @@ const session = async (id: string) => (await db.select().from(checkoutSessions).
 describe('session expiry timer', () => {
   it('schedules no timer for a new session: most sessions never need one (QStash free plan: 500 messages a day)', async () => {
     await createCheckoutSession(
-      { db, merchantId, now, requestId: 'req_1', idempotencyKey: null },
+      { db, merchantId, now, requestId: 'req_1', idempotencyKey: null, currency: 'pkr' },
       { amount: 510000, currency: 'pkr', lineItems: [{ name: 'Hoodie', quantity: 1, amount: 510000 }], successUrl: 'https://s.test/ok', cancelUrl: 'https://s.test/no', customerEmail: null },
     );
     expect(await db.select().from(jobs)).toHaveLength(0);

@@ -42,7 +42,7 @@ export async function fillCheckout(page: Page, card: string) {
   await page.getByLabel('Name on card').fill('Ayesha Khan');
 }
 
-export const payButton = (page: Page) => page.getByRole('button', { name: /^Pay PKR/ });
+export const payButton = (page: Page) => page.getByRole('button', { name: /^Pay [A-Z]{3} / });
 export const banner = (page: Page) => page.getByText('TEST MODE · no real payments');
 
 export async function expectNoSeriousA11yIssues(page: Page) {

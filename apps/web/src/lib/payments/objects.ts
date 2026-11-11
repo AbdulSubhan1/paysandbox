@@ -10,7 +10,7 @@ export function toPaymentObject(row: PaymentRow, customer: Pick<CustomerRow, 'id
     object: 'payment' as const,
     amount: row.amount,
     amount_refunded: row.amountRefunded,
-    currency: 'pkr' as const,
+    currency: row.currency,
     status: row.status,
     customer: { id: customer.id, name: customer.name, email: customer.email },
     card: { brand: row.cardBrand, last4: row.cardLast4 },

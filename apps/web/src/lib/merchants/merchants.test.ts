@@ -5,7 +5,8 @@ import { apiKeys } from '@/lib/db/schema';
 import { findMerchantBySecretKey } from '@/lib/keys/keys';
 import { createTestDb } from '@/test/db';
 import { makeUser } from '@/test/factories';
-import { createMerchant, getOwnedMerchant, listMerchants, MerchantLimitError } from './merchants';
+import { makeSession } from '@/test/factories';
+import { changeMerchantCurrency, createMerchant, projectsWithCheckouts, getOwnedMerchant, listMerchants, MerchantCurrencyError, MerchantLimitError } from './merchants';
 import { validateMerchantName } from './names';
 
 describe('validateMerchantName', () => {
@@ -63,5 +64,48 @@ describe('getOwnedMerchant', () => {
     const { merchant } = await createMerchant(db, owner.id, 'Owned Shop');
     expect((await getOwnedMerchant(db, owner.id, merchant.id))?.name).toBe('Owned Shop');
     expect(await getOwnedMerchant(db, stranger.id, merchant.id)).toBeNull();
+  });
+});
+
+describe('project currency', () => {
+  let db: Db;
+  beforeEach(async () => {
+    db = await createTestDb();
+  });
+
+  it('is PKR unless another currency is chosen at creation', async () => {
+    const user = await makeUser(db);
+    expect((await createMerchant(db, user.id, 'Rupee Shop')).merchant.currency).toBe('pkr');
+    expect((await createMerchant(db, user.id, 'Dollar Shop', 'usd')).merchant.currency).toBe('usd');
+  });
+
+  it('refuses a currency PaySandbox does not offer', async () => {
+    const user = await makeUser(db);
+    await expect(createMerchant(db, user.id, 'Rupee Shop', 'inr' as never)).rejects.toBeInstanceOf(MerchantCurrencyError);
+  });
+
+  it('can change while the project has no checkouts, then is locked', async () => {
+    const user = await makeUser(db);
+    const { merchant } = await createMerchant(db, user.id, 'Insurance Site');
+    expect((await changeMerchantCurrency(db, user.id, merchant.id, 'usd')).currency).toBe('usd');
+    await makeSession(db, merchant.id, { currency: 'usd' });
+    await expect(changeMerchantCurrency(db, user.id, merchant.id, 'aed')).rejects.toBeInstanceOf(MerchantCurrencyError);
+    expect((await getOwnedMerchant(db, user.id, merchant.id))?.currency).toBe('usd');
+  });
+
+  it("refuses to change someone else's project", async () => {
+    const owner = await makeUser(db);
+    const stranger = await makeUser(db);
+    const { merchant } = await createMerchant(db, owner.id, 'Owned Shop');
+    await expect(changeMerchantCurrency(db, stranger.id, merchant.id, 'usd')).rejects.toBeInstanceOf(MerchantCurrencyError);
+  });
+
+  it('tells which projects already have checkouts (their currency is locked)', async () => {
+    const user = await makeUser(db);
+    const a = (await createMerchant(db, user.id, 'Has Checkouts')).merchant.id;
+    const b = (await createMerchant(db, user.id, 'Fresh Project')).merchant.id;
+    await makeSession(db, a);
+    expect(await projectsWithCheckouts(db, [a, b])).toEqual(new Set([a]));
+    expect(await projectsWithCheckouts(db, [])).toEqual(new Set());
   });
 });

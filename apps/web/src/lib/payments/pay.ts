@@ -141,6 +141,7 @@ export async function payCheckoutSession(db: Db, input: PayInput, now: Date): Pr
         customerId: customer.id,
         attemptId: input.attemptId,
         amount: session.amount,
+        currency: session.currency,
         status: outcome.kind,
         cardBrand: card.brand,
         cardLast4: card.number.slice(-4),

@@ -18,7 +18,7 @@ beforeEach(async () => {
   db = await createTestDb();
   a = (await makeMerchant(db)).id;
   const s = await createCheckoutSession(
-    { db, merchantId: a, now: t(0), requestId: 'req_1', idempotencyKey: null },
+    { db, merchantId: a, now: t(0), requestId: 'req_1', idempotencyKey: null, currency: 'pkr' },
     { amount: 510000, currency: 'pkr', lineItems: [{ name: 'Hoodie', quantity: 1, amount: 510000 }], successUrl: 'https://s.test/ok', cancelUrl: 'https://s.test/no', customerEmail: null },
   );
   const pay = (await payCheckoutSession(db, { sessionId: s.id, attemptId: 'a1', email: 'a@x.pk', name: 'Ayesha', cardNumber: '4000000000003220', expiry: '12/29' }, t(1))).paymentId;

@@ -40,7 +40,7 @@ async function Checkout({ params }: { params: PageProps<'/c/[sessionId]'>['param
           ← Back to store
         </a>
         <div className="mt-5">
-          <OrderSummary merchantName={session.merchantName} lineItems={session.lineItems} amount={session.amount} />
+          <OrderSummary merchantName={session.merchantName} lineItems={session.lineItems} amount={session.amount} currency={session.currency} />
         </div>
       </div>
       <div className="border-t border-border bg-card px-4 py-7 md:border-t-0 md:border-l md:px-12 md:py-14">
@@ -48,6 +48,7 @@ async function Checkout({ params }: { params: PageProps<'/c/[sessionId]'>['param
           <CardForm
             sessionId={session.id}
             amount={session.amount}
+            currency={session.currency}
             merchantName={session.merchantName}
             defaultEmail={session.customerEmail ?? ''}
           />

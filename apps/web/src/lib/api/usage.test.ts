@@ -54,7 +54,7 @@ describe('countRequestForKey (one round trip for auth + usage)', () => {
     const user = await makeUser(db);
     const { merchant, secretKey } = await createMerchant(db, user.id, 'Chai Code Co.');
     const now = new Date();
-    expect(await countRequestForKey(db, hashKey(secretKey), now)).toMatchObject({ merchantId: merchant.id, usage: { used: 1, allowed: true, cap: 1000 } });
+    expect(await countRequestForKey(db, hashKey(secretKey), now)).toMatchObject({ merchantId: merchant.id, currency: 'pkr', usage: { used: 1, allowed: true, cap: 1000 } });
     expect((await countRequestForKey(db, hashKey(secretKey), now))?.usage.used).toBe(2);
     expect(await countRequestForKey(db, hashKey('sk_test_wrong'), now)).toBeNull();
 

@@ -24,7 +24,7 @@ type Props = PageProps<'/dashboard/[merchantId]/payments'>;
 
 async function Payments({ params, searchParams }: Props) {
   const { merchantId } = await params;
-  await requireProject(merchantId);
+  const { merchant } = await requireProject(merchantId);
   const sp = await searchParams;
   const status = isStatus(sp.status) ? sp.status : undefined;
   const customer = typeof sp.customer === 'string' ? sp.customer : undefined;
@@ -83,7 +83,7 @@ async function Payments({ params, searchParams }: Props) {
       {page.rows.length === 0 ? (
         <EmptyState title="No payments here" body={counts.all === 0 ? 'No test payments yet.' : 'No payments match this filter.'} />
       ) : (
-        <PaymentsTable merchantId={merchantId} rows={page.rows} />
+        <PaymentsTable merchantId={merchantId} currency={merchant.currency} rows={page.rows} />
       )}
       <Pager next={page.next} isFirst={!before} href={(b) => link({ before: b })} />
     </div>
