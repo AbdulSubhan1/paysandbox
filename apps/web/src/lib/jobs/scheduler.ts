@@ -27,7 +27,8 @@ export async function verifyQstashSignature(signature: string | null, body: stri
   const nextSigningKey = process.env.QSTASH_NEXT_SIGNING_KEY;
   if (!signature || !currentSigningKey || !nextSigningKey) return false;
   try {
-    return await new Receiver({ currentSigningKey, nextSigningKey }).verify({ signature, body });
+    // `url` makes QStash check the signed destination, so a message signed for another URL can't be replayed here.
+    return await new Receiver({ currentSigningKey, nextSigningKey }).verify({ signature, body, url: `${appUrl()}/api/internal/jobs` });
   } catch {
     return false;
   }

@@ -1,3 +1,4 @@
+import { addActivity } from '@/lib/payments/activity';
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '@/lib/db/client';
 import { checkoutSessions, customers, payments } from '@/lib/db/schema';
@@ -5,7 +6,6 @@ import { recordEvent } from '@/lib/events/record';
 import type { JobHandler, JobOutcome } from '@/lib/jobs/jobs';
 import { toPaymentObject } from '@/lib/payments/objects';
 import { DECLINES } from '@/lib/payments/outcome';
-import { addActivity } from '@/lib/payments/pay';
 import { assertTransition } from '@/lib/payments/state';
 
 /** The expire_session timer: an open session past expires_at expires, and any payment waiting for OTP fails. */

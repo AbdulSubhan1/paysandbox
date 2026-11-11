@@ -1,3 +1,4 @@
+import { addActivity } from '@/lib/payments/activity';
 import { and, eq } from 'drizzle-orm';
 import { ApiError } from '@/lib/api/errors';
 import type { Db } from '@/lib/db/client';
@@ -6,7 +7,6 @@ import { recordEvent } from '@/lib/events/record';
 import { newId } from '@/lib/ids';
 import { formatPkr } from '@/lib/money';
 import type { PaymentRow } from '@/lib/payments/objects';
-import { addActivity } from '@/lib/payments/pay';
 import { assertTransition } from '@/lib/payments/state';
 
 export const REFUND_REASONS = ['requested_by_customer', 'duplicate', 'fraudulent'] as const;

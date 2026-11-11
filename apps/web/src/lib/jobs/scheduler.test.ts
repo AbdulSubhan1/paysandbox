@@ -49,10 +49,11 @@ describe('scheduler', () => {
     expect(await verifyQstashSignature(null, '{}')).toBe(false);
     vi.stubEnv('QSTASH_CURRENT_SIGNING_KEY', '');
     expect(await verifyQstashSignature('sig', '{}')).toBe(false);
+    vi.stubEnv('APP_URL', 'https://paysandbox.vercel.app');
     vi.stubEnv('QSTASH_CURRENT_SIGNING_KEY', 'k1');
     vi.stubEnv('QSTASH_NEXT_SIGNING_KEY', 'k2');
     expect(await verifyQstashSignature('sig', '{"jobId":"job_1"}')).toBe(true);
-    expect(verify).toHaveBeenCalledWith({ signature: 'sig', body: '{"jobId":"job_1"}' });
+    expect(verify).toHaveBeenCalledWith({ signature: 'sig', body: '{"jobId":"job_1"}', url: 'https://paysandbox.vercel.app/api/internal/jobs' });
     verify.mockRejectedValueOnce(new Error('bad signature'));
     expect(await verifyQstashSignature('sig', '{}')).toBe(false);
   });

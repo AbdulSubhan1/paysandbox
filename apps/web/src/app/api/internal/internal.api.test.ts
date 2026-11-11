@@ -1,3 +1,4 @@
+import nodeCrypto from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Db, setDbForTests } from '@/lib/db/client';
@@ -53,6 +54,15 @@ describe('POST /api/internal/jobs (QStash)', () => {
 
 describe('GET /api/internal/cron', () => {
   const call = (auth?: string) => cronRoute(new Request('http://localhost/api/internal/cron', { headers: auth ? { authorization: auth } : {} }));
+
+  it('compares the bearer in constant time', async () => {
+    vi.stubEnv('CRON_SECRET', 's3cret');
+    const spy = vi.spyOn(nodeCrypto, 'timingSafeEqual');
+    expect((await call('Bearer s3creX')).status).toBe(401); // same length, wrong value
+    expect((await call('Bearer s3cret-but-longer')).status).toBe(401);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
 
   it('needs the CRON_SECRET bearer', async () => {
     vi.stubEnv('CRON_SECRET', 's3cret');

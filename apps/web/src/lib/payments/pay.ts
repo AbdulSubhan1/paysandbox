@@ -2,12 +2,13 @@ import { and, count, eq } from 'drizzle-orm';
 import { findTestCard } from '@/lib/card-guard/guard';
 import { parseExpiry, validateEmail, validateName } from '@/lib/checkout/validate';
 import type { Db } from '@/lib/db/client';
-import { checkoutSessions, customers, jobs, paymentActivity, payments } from '@/lib/db/schema';
+import { checkoutSessions, customers, jobs, payments } from '@/lib/db/schema';
 import { DISPUTE_CARD_DELAY_SECONDS } from '@/lib/disputes/disputes';
 import { recordEvent } from '@/lib/events/record';
 import { enqueueJob } from '@/lib/jobs/jobs';
 import { newId } from '@/lib/ids';
 import { buildReturnUrl, effectiveSessionStatus } from '@/lib/sessions/sessions';
+import { addActivity } from './activity';
 import { type CustomerRow, type PaymentRow, toPaymentObject } from './objects';
 import { DECLINES, declineFor, decideOutcome } from './outcome';
 
@@ -52,14 +53,6 @@ type Tx = Db;
 /** Bounds what anyone holding a checkout link can create in the merchant's account. */
 export const MAX_PAYMENTS_PER_SESSION = 10;
 
-/** Appends timeline rows; `seq` keeps their order even when they share a timestamp. */
-export async function addActivity(
-  tx: Tx,
-  rows: { checkoutSessionId: string; paymentId: string; kind: string; message: string; detail?: object }[],
-  now: Date,
-) {
-  await tx.insert(paymentActivity).values(rows.map((r) => ({ id: newId('act'), detail: null, ...r, createdAt: now })));
-}
 
 export function resultFor(payment: PaymentRow, successUrl: string): PayResult {
   if (payment.status === 'requires_action') return { status: 'requires_action', paymentId: payment.id };
