@@ -5,6 +5,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: { tsconfigPaths: true },
   test: {
+    // Each DB test boots an in-memory Postgres (PGlite) and runs migrations; that is slow under parallel load.
+    hookTimeout: 30_000,
+    testTimeout: 30_000,
     coverage: {
       provider: 'v8',
       include: ['src/lib/**/*.ts'],

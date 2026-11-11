@@ -4,8 +4,8 @@ export default function InviteOnly() {
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-4 px-4">
       <h1 className="text-2xl font-bold">PaySandbox is invite-only for now.</h1>
-      <p className="text-[var(--muted)]">Your GitHub account isn&apos;t on the list yet.</p>
-      <a className="font-semibold text-[var(--accent)] underline" href={href}>
+      <p className="text-muted-foreground">Your GitHub account isn&apos;t on the list yet.</p>
+      <a className="font-semibold text-primary underline" href={href}>
         Request access
       </a>
     </main>
