@@ -1,7 +1,9 @@
 import type { Db } from '@/lib/db/client';
-import { checkoutSessions, customers, merchants, payments, users } from '@/lib/db/schema';
+import { encryptSecret } from '@/lib/crypto/secretbox';
+import { checkoutSessions, customers, merchants, payments, users, webhookEndpoints } from '@/lib/db/schema';
 import { newId } from '@/lib/ids';
 import { addHours } from '@/lib/time';
+import { newSigningSecret } from '@/lib/webhooks/signing';
 
 export async function makeUser(db: Db, overrides: Partial<typeof users.$inferInsert> = {}) {
   const id = newId('usr');
@@ -64,4 +66,14 @@ export async function makePayment(db: Db, merchantId: string, overrides: Partial
     })
     .returning();
   return row;
+}
+
+/** An endpoint inserted directly (no DNS check), with its plain signing secret for verifying deliveries. */
+export async function makeEndpoint(db: Db, merchantId: string, overrides: { url?: string; enabled?: boolean } = {}) {
+  const secret = newSigningSecret();
+  const [endpoint] = await db
+    .insert(webhookEndpoints)
+    .values({ id: newId('we'), merchantId, url: 'https://hooks.example.com/ps', secretEncrypted: encryptSecret(secret), ...overrides })
+    .returning();
+  return { endpoint, secret };
 }
