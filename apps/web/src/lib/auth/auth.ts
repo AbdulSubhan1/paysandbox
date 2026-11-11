@@ -15,6 +15,8 @@ export const auth = betterAuth({
     database: { generateId: ({ model }) => (model === 'user' ? newId('usr') : randomBase62(32)) },
   },
   emailAndPassword: { enabled: e2eMode }, // test-only login, never on Vercel
+  // Production rate-limits sign-ups per IP; E2E signs up many accounts from 127.0.0.1. Never off on Vercel.
+  ...(e2eMode ? { rateLimit: { enabled: false } } : {}),
   socialProviders: {
     github: {
       clientId: process.env.GITHUB_CLIENT_ID ?? '',

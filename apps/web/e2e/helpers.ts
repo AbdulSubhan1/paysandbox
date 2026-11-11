@@ -8,7 +8,7 @@ import { createMerchant } from '../src/lib/merchants/merchants';
 import { revealWebhookSecret, setWebhookEndpoint } from '../src/lib/webhooks/endpoints';
 import { E2E } from '../src/test/seed-e2e';
 import { makeUser } from '../src/test/factories';
-import { E2E_DATABASE_URL } from './env';
+import { E2E_BASE_URL, E2E_DATABASE_URL } from './env';
 
 export const sessionBody = {
   amount: 510000,
@@ -46,7 +46,8 @@ export const payButton = (page: Page) => page.getByRole('button', { name: /^Pay 
 export const banner = (page: Page) => page.getByText('TEST MODE · no real payments');
 
 export async function expectNoSeriousA11yIssues(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+  // Toasts animate in with changing opacity, which axe reads as low contrast; they're checked at rest elsewhere.
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).exclude('[data-sonner-toaster]').analyze();
   const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
 }
@@ -91,4 +92,21 @@ export async function payViaApi(request: APIRequestContext, sessionId: string, c
   });
   expect(res.status()).toBe(200);
   return res.json();
+}
+
+/** Signs up a fresh E2E user, creates a project in the UI and returns its id and one-time secret key. */
+export async function signUpWithProject(page: Page, name: string): Promise<{ merchantId: string; sk: string }> {
+  const res = await page.request.post('/api/auth/sign-up/email', {
+    headers: { origin: E2E_BASE_URL },
+    data: { email: `qa-${name.replace(/\W/g, '').toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@e2e.test`, password: 'correct-horse-battery-9', name: 'QA' },
+  });
+  expect(res.ok()).toBe(true);
+  await page.goto('/dashboard/projects');
+  await page.getByLabel('Project name').fill(name);
+  await page.getByRole('button', { name: 'Create project' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Your secret key' });
+  const sk = await dialog.getByRole('textbox').inputValue();
+  await dialog.getByRole('button', { name: /copied it/ }).click();
+  const href = await page.getByRole('link', { name: 'Open dashboard' }).first().getAttribute('href');
+  return { merchantId: href!.split('/').pop()!, sk };
 }

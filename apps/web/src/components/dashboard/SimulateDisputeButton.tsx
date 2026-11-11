@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { SOLID_DANGER } from './DisputePanel';
 import type { ActionResult } from './RefundForm';
 
 export function SimulateDisputeButton({ onSimulate }: { onSimulate: () => Promise<ActionResult> }) {
   const [sending, setSending] = useState(false);
   return (
     <Button
-      variant="destructive"
+      className={SOLID_DANGER}
       disabled={sending}
       onClick={async () => {
         setSending(true);

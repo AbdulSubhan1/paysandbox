@@ -18,6 +18,9 @@ import { formatPkt } from '@/lib/format';
 import { formatPkr } from '@/lib/money';
 import type { ActionResult } from './RefundForm';
 
+/** Solid red with white text: the soft destructive variant is under 4.5:1 contrast on tinted panels. */
+export const SOLID_DANGER = 'bg-destructive text-white hover:bg-destructive/90';
+
 const REASON_TEXT: Record<string, string> = {
   product_not_received: 'The customer says the product never arrived.',
   fraudulent: 'The cardholder says they did not make this payment.',
@@ -62,7 +65,7 @@ export function DisputePanel({
           Submit evidence and win
         </Button>
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <AlertDialogTrigger render={<Button variant="destructive" disabled={sending} />}>Accept and lose</AlertDialogTrigger>
+          <AlertDialogTrigger render={<Button className={SOLID_DANGER} disabled={sending} />}>Accept and lose</AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Accept the dispute and lose {formatPkr(dispute.amount)}?</AlertDialogTitle>
