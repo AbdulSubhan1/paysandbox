@@ -7,6 +7,7 @@ import * as schema from '@/lib/db/schema';
 
 // Migrate once per test worker, then clone that database for each test (much faster than migrating every time).
 let template: Promise<PGlite> | undefined;
+const open: PGlite[] = [];
 
 function migratedTemplate(): Promise<PGlite> {
   template ??= (async () => {
@@ -20,7 +21,13 @@ function migratedTemplate(): Promise<PGlite> {
 /** A fresh in-memory Postgres with all migrations applied, also installed as the app's db. */
 export async function createTestDb(): Promise<Db> {
   const client = (await (await migratedTemplate()).clone()) as PGlite;
+  open.push(client);
   const db = drizzle({ client, schema, casing: 'snake_case' }) as unknown as Db;
   setDbForTests(db);
   return db;
+}
+
+/** Frees every database this test file created (each PGlite holds its own WASM heap). */
+export async function closeTestDbs(): Promise<void> {
+  await Promise.all(open.splice(0).map((c) => c.close()));
 }

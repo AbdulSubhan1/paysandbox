@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     // Each DB test boots an in-memory Postgres (PGlite) and runs migrations; that is slow under parallel load.
     hookTimeout: 30_000,
+    maxWorkers: 3, // each worker holds PGlite instances; more workers ran the machine out of memory
     testTimeout: 30_000,
     coverage: {
       provider: 'v8',
@@ -19,7 +20,7 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: 'node', environment: 'node', include: ['src/**/*.test.ts'] },
+        test: { name: 'node', environment: 'node', include: ['src/**/*.test.ts'], setupFiles: ['./src/test/setup-node.ts'] },
       },
       {
         extends: true,
