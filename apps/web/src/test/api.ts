@@ -1,6 +1,6 @@
-import type { ApiRouteContext } from '@/lib/api/handler';
-
-type RouteHandler = (req: Request, route: ApiRouteContext) => Promise<Response>;
+// Route handlers type their params per route (e.g. { sessionId: string }); tests pass them as a plain record.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RouteHandler = (req: Request, route: { params: Promise<any> }) => Promise<Response>;
 
 export type CallOptions = {
   key?: string | null;
