@@ -8,6 +8,8 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   workers: 2,
   retries: ci ? 1 : 0,
+  // Local runs use `next dev`, which compiles each route on first visit; give assertions room for that.
+  expect: { timeout: 15_000 },
   reporter: ci ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL: E2E_BASE_URL, trace: 'retain-on-failure' },
   globalSetup: './e2e/global-setup.ts',
