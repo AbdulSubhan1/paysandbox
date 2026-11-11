@@ -1,12 +1,13 @@
 import type { Db } from '@/lib/db/client';
 import { getDb } from '@/lib/db/client';
 import { newId } from '@/lib/ids';
-import { findMerchantBySecretKey } from '@/lib/keys/keys';
+import { runAfterResponse } from '@/lib/after';
+import { hashKey } from '@/lib/keys/keys';
 import { withIdempotency } from '@/lib/idempotency/idempotency';
 import { reportError } from '@/lib/observability/report';
 import { ApiError, errorBody } from './errors';
 import { logApiRequest } from './request-log';
-import { consumeUsage, dailyLimitError } from './usage';
+import { countRequestForKey, dailyLimitError, type UsageResult } from './usage';
 
 export type ApiResponse = { status: number; body: unknown; headers?: Record<string, string> };
 export type ApiContext = { db: Db; merchantId: string; now: Date; requestId: string; idempotencyKey: string | null };
@@ -24,17 +25,20 @@ function readKey(authorization: string | null): string | null {
   return null;
 }
 
-/** Returns the merchant ID for a secret key, or throws a 401 that says what was wrong. */
-export async function authenticateRequest(db: Db, authorization: string | null, now: Date): Promise<string> {
+/**
+ * The merchant for the secret key, with today's API request counted, in one database round trip. Throws a 401 that
+ * says what was wrong; the key-shape checks need no query.
+ */
+export async function authenticateAndCount(db: Db, authorization: string | null, now: Date): Promise<{ merchantId: string; usage: UsageResult }> {
   const key = readKey(authorization);
   if (!key) throw invalidKey('No API key provided.');
   if (key.startsWith('pk_test_')) {
     throw invalidKey("A publishable key can't be used here. Use your secret key (sk_test_…) on your server.");
   }
   if (key.startsWith('sk_live_') || key.startsWith('pk_live_')) throw invalidKey('PaySandbox has no live mode. Use your sk_test_ key.');
-  const merchantId = key.startsWith('sk_test_') ? await findMerchantBySecretKey(db, key, now) : null;
-  if (!merchantId) throw invalidKey('Invalid API key.');
-  return merchantId;
+  const found = key.startsWith('sk_test_') ? await countRequestForKey(db, hashKey(key), now) : null;
+  if (!found) throw invalidKey('Invalid API key.');
+  return found;
 }
 
 const internalError = () => new ApiError(500, 'api_error', 'internal_error', 'Something went wrong on our side. Try again.');
@@ -55,8 +59,9 @@ function errorCodeOf(body: unknown): string | null {
   return typeof code === 'string' ? code : null;
 }
 
-function toResponse(r: ApiResponse): Response {
-  return Response.json(r.body, { status: r.status, headers: r.headers });
+/** `Server-Timing: app;dur=<ms>` shows in browser dev tools how long the server spent. */
+function toResponse(r: ApiResponse, started: number): Response {
+  return Response.json(r.body, { status: r.status, headers: { ...r.headers, 'server-timing': `app;dur=${Date.now() - started}` } });
 }
 
 /** Auth → daily cap → idempotency (POST) → handler → request log. Refused-by-cap requests are not logged. */
@@ -70,15 +75,16 @@ export function withApi(handler: ApiHandler, opts: { idempotent?: boolean } = {}
 
     let merchantId: string;
     try {
-      merchantId = await authenticateRequest(db, req.headers.get('authorization'), now);
-      const usage = await consumeUsage(db, merchantId, 'api_requests', now);
+      const auth = await authenticateAndCount(db, req.headers.get('authorization'), now);
+      merchantId = auth.merchantId;
+      const usage = auth.usage;
       if (!usage.allowed) {
         const e = dailyLimitError('api_requests', usage);
-        return toResponse({ status: e.status, body: errorBody(e), headers: e.headers });
+        return toResponse({ status: e.status, body: errorBody(e), headers: e.headers }, started);
       }
     } catch (e) {
       const err = e instanceof ApiError ? e : internalError();
-      return toResponse({ status: err.status, body: errorBody(err), headers: err.headers });
+      return toResponse({ status: err.status, body: errorBody(err), headers: err.headers }, started);
     }
 
     const ctx: ApiContext = { db, merchantId, now, requestId: newId('req'), idempotencyKey };
@@ -109,15 +115,11 @@ export function withApi(handler: ApiHandler, opts: { idempotent?: boolean } = {}
     }
     const errorCode = response.status >= 400 ? errorCodeOf(response.body) : null;
 
-    await logApiRequest(db, {
-      merchantId,
-      method: req.method,
-      path,
-      status: response.status,
-      idempotencyKey,
-      errorCode,
-      durationMs: Date.now() - started,
-    });
-    return toResponse(response);
+    // After the response: the customer doesn't wait for the log write.
+    const durationMs = Date.now() - started;
+    runAfterResponse('api request log', () =>
+      logApiRequest(db, { merchantId, method: req.method, path, status: response.status, idempotencyKey, errorCode, durationMs }),
+    );
+    return toResponse(response, started);
   };
 }

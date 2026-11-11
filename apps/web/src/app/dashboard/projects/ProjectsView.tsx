@@ -1,80 +1,17 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useState } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+import { type RevealedSecret, SecretKeyDialog } from '@/components/dashboard/SecretKey';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
-import { createProjectAction, type RevealedSecret, rollSecretKeyAction } from './actions';
-import { type EndpointSummary, WebhookEndpointCard } from './WebhookEndpointCard';
+import { createProjectAction } from './actions';
 
-type Project = { id: string; name: string; publishableKey: string | null; secretLast4: string | null; endpoint: EndpointSummary };
+type Project = { id: string; name: string };
 
-/** "Roll secret key" with its confirm dialog. AlertDialogAction is a plain button, so the dialog is closed here. */
-function RollKeyButton({ project, onRolled }: { project: Project; onRolled: (r: RevealedSecret) => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="outline" size="sm" />}>Roll secret key</AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Roll the secret key for {project.name}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            You get a new secret key now. The current one keeps working for 24 hours, then stops.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={async () => {
-              const r = await rollSecretKeyAction(project.id);
-              setOpen(false);
-              onRolled(r);
-            }}
-          >
-            Roll key
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-function CopyField({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Field>
-      <FieldLabel>{label}</FieldLabel>
-      <InputGroup>
-        <InputGroupInput readOnly value={value} className="font-mono text-sm" aria-label={label} />
-        <InputGroupAddon align="inline-end">
-          <InputGroupButton
-            onClick={async () => {
-              await navigator.clipboard.writeText(value);
-              setCopied(true);
-            }}
-          >
-            {copied ? 'Copied' : 'Copy'}
-          </InputGroupButton>
-        </InputGroupAddon>
-      </InputGroup>
-    </Field>
-  );
-}
-
+/** The project list and "New project". Keys, webhooks and payments live in each project's dashboard. */
 export function ProjectsView({ projects, canCreate, max }: { projects: Project[]; canCreate: boolean; max: number }) {
   const [revealed, setRevealed] = useState<RevealedSecret | null>(null);
   const [createState, createAction, creating] = useActionState(async (prev: RevealedSecret | null, form: FormData) => {
@@ -84,28 +21,20 @@ export function ProjectsView({ projects, canCreate, max }: { projects: Project[]
   }, null);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold">Projects</h1>
-        <p className="text-muted-foreground">Each project has its own test keys. Up to {max} projects.</p>
+        <p className="text-muted-foreground">Each project has its own test keys, webhooks and payments. Up to {max} projects.</p>
       </div>
 
       {projects.map((p) => (
         <Card key={p.id}>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
             <CardTitle>{p.name}</CardTitle>
+            <Link href={`/dashboard/${p.id}`} className={buttonVariants({ size: 'sm' })}>
+              Open dashboard
+            </Link>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {p.publishableKey && <CopyField label="Publishable key" value={p.publishableKey} />}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-medium">Secret key</div>
-                <div className="font-mono text-sm text-muted-foreground">sk_test_…{p.secretLast4}</div>
-              </div>
-              <RollKeyButton project={p} onRolled={setRevealed} />
-            </div>
-            <WebhookEndpointCard merchantId={p.id} endpoint={p.endpoint} />
-          </CardContent>
         </Card>
       ))}
 
@@ -131,20 +60,7 @@ export function ProjectsView({ projects, canCreate, max }: { projects: Project[]
         <p className="text-sm text-muted-foreground">You have reached {max} projects.</p>
       )}
 
-      <Dialog open={!!revealed?.ok} onOpenChange={(open) => !open && setRevealed(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Your secret key</DialogTitle>
-            <DialogDescription>
-              Copy it now. For safety it is shown only once; after you close this, only its last 4 characters are visible.
-            </DialogDescription>
-          </DialogHeader>
-          {revealed?.ok && <CopyField label={`Secret key for ${revealed.merchantName}`} value={revealed.secretKey} />}
-          <DialogFooter>
-            <Button onClick={() => setRevealed(null)}>I&apos;ve copied it</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SecretKeyDialog revealed={revealed} onClose={() => setRevealed(null)} />
     </div>
   );
 }

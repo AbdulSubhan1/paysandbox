@@ -25,12 +25,17 @@ import {
   rollWebhookSecretAction,
   saveWebhookEndpointAction,
   sendTestEventAction,
-} from './webhook-actions';
+} from './actions';
 
 export type EndpointSummary = { url: string; enabled: boolean } | null;
 
 /** One webhook endpoint per project: URL, signing secret (reveal, copy, roll), re-enable and test events. */
-export function WebhookEndpointCard({ merchantId, endpoint }: { merchantId: string; endpoint: EndpointSummary }) {
+export function WebhookEndpointCard(props: { merchantId: string; endpoint: EndpointSummary }) {
+  // Local state starts from the props; remount when the server's view changes (e.g. auto-disabled after failures).
+  return <EndpointCard key={`${props.endpoint?.url ?? ''}|${props.endpoint?.enabled ?? ''}`} {...props} />;
+}
+
+function EndpointCard({ merchantId, endpoint }: { merchantId: string; endpoint: EndpointSummary }) {
   const ids = { url: useId(), secret: useId(), type: useId() };
   const [url, setUrl] = useState(endpoint?.url ?? '');
   const [saved, setSaved] = useState(!!endpoint);

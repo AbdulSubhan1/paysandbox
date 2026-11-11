@@ -6,6 +6,9 @@ const dataDir = process.env.PGLITE_DIR ?? '.pglite-local';
 const port = Number(process.env.PGLITE_PORT ?? 5433);
 
 const db = await PGlite.create(dataDir);
+// PGlite is one database: clients connected at the same time can interleave multi-step (extended protocol)
+// queries and fail with 'portal "" does not exist'. The app keeps each pool to one connection locally
+// (DB_POOL_MAX=1) so that only separate dev-mode module copies can overlap. maxConnections 1 refuses extras instead.
 const server = new PGLiteSocketServer({ db, port, host: '127.0.0.1', maxConnections: 20 });
 await server.start();
 console.log(`PGlite ready: postgres://postgres:postgres@127.0.0.1:${port}/postgres (data: ${dataDir})`);

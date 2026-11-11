@@ -30,4 +30,8 @@ describe('better auth with the invite-only hook', () => {
     ).rejects.toThrow();
     expect(await db.select().from(users).where(eq(users.email, 'stranger@gmail.com'))).toHaveLength(0);
   });
+
+  it('has no sign-up rate limit in E2E mode, where many test accounts sign up at once', () => {
+    expect(auth.options.rateLimit?.enabled).toBe(false);
+  });
 });

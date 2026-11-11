@@ -1,3 +1,4 @@
+import { addActivity } from './activity';
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '@/lib/db/client';
 import { checkoutSessions, customers, payments } from '@/lib/db/schema';
@@ -5,7 +6,7 @@ import { recordEvent } from '@/lib/events/record';
 import { effectiveSessionStatus } from '@/lib/sessions/sessions';
 import { toPaymentObject } from './objects';
 import { DECLINES } from './outcome';
-import { addActivity, completePayment, PayError, type PayResult, resultFor } from './pay';
+import { completePayment, PayError, type PayResult, resultFor } from './pay';
 
 export const TEST_OTP = '123456';
 export const MAX_OTP_ATTEMPTS = 3;

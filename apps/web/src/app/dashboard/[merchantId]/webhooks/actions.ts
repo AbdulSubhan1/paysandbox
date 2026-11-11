@@ -14,6 +14,7 @@ import {
   rollWebhookSecret,
   setWebhookEndpoint,
 } from '@/lib/webhooks/endpoints';
+import { resendEvent } from '@/lib/webhooks/resend';
 import { defaultResolver } from '@/lib/webhooks/ssrf';
 import { sendTestEvent, TEST_EVENT_TYPES } from '@/lib/webhooks/test-events';
 
@@ -30,7 +31,7 @@ export async function saveWebhookEndpointAction(merchantId: string, url: string)
   if (!(await owns(merchantId))) return NOT_FOUND;
   try {
     const row = await setWebhookEndpoint(getDb(), merchantId, url, new Date(), { resolve: defaultResolver, allowPrivate: isE2eMode() });
-    revalidatePath('/dashboard/projects');
+    revalidatePath(`/dashboard/${merchantId}/webhooks`);
     return { ok: true, url: row.url };
   } catch (e) {
     if (e instanceof EndpointError) return { ok: false, error: e.message };
@@ -51,7 +52,7 @@ export async function rollWebhookSecretAction(merchantId: string): Promise<Actio
 export async function reenableWebhookEndpointAction(merchantId: string): Promise<ActionResult> {
   if (!(await owns(merchantId))) return NOT_FOUND;
   await reenableWebhookEndpoint(getDb(), merchantId);
-  revalidatePath('/dashboard/projects');
+  revalidatePath(`/dashboard/${merchantId}/webhooks`);
   return { ok: true };
 }
 
@@ -66,4 +67,19 @@ export async function sendTestEventAction(merchantId: string, type: string): Pro
     };
   flushJobsAfterResponse({ merchantId });
   return { ok: true, eventId: r.eventId };
+}
+
+const RESEND_ERRORS = {
+  no_delivery: 'This event was recorded before a webhook endpoint was saved, so there is nothing to resend.',
+  endpoint_disabled: 'The endpoint is disabled. Re-enable it first.',
+  in_progress: 'An attempt is already on its way or scheduled for this event.',
+} as const;
+
+export async function resendEventAction(merchantId: string, eventId: string): Promise<ActionResult> {
+  if (!(await owns(merchantId))) return NOT_FOUND;
+  const r = await resendEvent(getDb(), merchantId, eventId, new Date());
+  if (!r.ok) return { ok: false, error: RESEND_ERRORS[r.reason] };
+  flushJobsAfterResponse({ merchantId });
+  revalidatePath(`/dashboard/${merchantId}/webhooks/${eventId}`);
+  return { ok: true };
 }

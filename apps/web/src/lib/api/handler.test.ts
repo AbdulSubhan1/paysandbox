@@ -103,3 +103,12 @@ describe('withApi idempotency', () => {
     expect(runs).toBe(1);
   });
 });
+
+describe('withApi timing', () => {
+  it('reports server time in a Server-Timing header, on success and on errors', async () => {
+    for (const [h, auth] of [[whoAmI, `Bearer ${keys.sk}`], [failing, `Bearer ${keys.sk}`], [whoAmI, null]] as const) {
+      const res = await call(h, auth);
+      expect(res.headers.get('server-timing')).toMatch(/^app;dur=\d+$/);
+    }
+  });
+});

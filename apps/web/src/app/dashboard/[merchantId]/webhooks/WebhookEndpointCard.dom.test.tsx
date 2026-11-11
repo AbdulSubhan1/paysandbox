@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 const saveWebhookEndpointAction = vi.fn();
 const sendTestEventAction = vi.fn();
 const revealWebhookSecretAction = vi.fn();
-vi.mock('./webhook-actions', () => ({
+vi.mock('./actions', () => ({
   saveWebhookEndpointAction,
   sendTestEventAction,
   revealWebhookSecretAction,
@@ -60,5 +60,12 @@ describe('WebhookEndpointCard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save endpoint' }));
     expect(await screen.findByText('Webhook URLs must use https.')).toBeInTheDocument();
     expect(toast.error).toHaveBeenCalledWith('Webhook URLs must use https.');
+  });
+
+  it('shows the disabled banner when the endpoint it is given becomes disabled', () => {
+    const { rerender } = render(<WebhookEndpointCard merchantId="mer_1" endpoint={{ url: 'https://webhook.site/abc', enabled: true }} />);
+    expect(screen.queryByText('Disabled after 20 failed events in a row')).toBeNull();
+    rerender(<WebhookEndpointCard merchantId="mer_1" endpoint={{ url: 'https://webhook.site/abc', enabled: false }} />);
+    expect(screen.getByText('Disabled after 20 failed events in a row')).toBeInTheDocument();
   });
 });

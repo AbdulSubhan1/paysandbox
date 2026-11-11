@@ -38,6 +38,8 @@ export default defineConfig({
         BETTER_AUTH_URL: E2E_BASE_URL,
         BETTER_AUTH_SECRET: 'e2e-only-secret-not-used-anywhere-else-0000',
         WEBHOOK_SECRET_KEY: E2E_WEBHOOK_SECRET_KEY,
+        // Locally the database is single-connection PGlite (scripts/local-db.mjs); CI has real Postgres.
+        ...(ci ? {} : { DB_POOL_MAX: '1', DB_POOL_IDLE_MS: '50' }),
       },
     },
   ],

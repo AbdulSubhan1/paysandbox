@@ -1,12 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import type { RevealedSecret } from '@/components/dashboard/SecretKey';
 import { requireUser } from '@/lib/auth/session';
 import { getDb } from '@/lib/db/client';
-import { rollSecretKey } from '@/lib/keys/keys';
-import { createMerchant, getOwnedMerchant, MerchantLimitError, MerchantNameError } from '@/lib/merchants/merchants';
+import { createMerchant, MerchantLimitError, MerchantNameError } from '@/lib/merchants/merchants';
 
-export type RevealedSecret = { ok: true; merchantName: string; secretKey: string } | { ok: false; error: string };
 
 export async function createProjectAction(_prev: RevealedSecret | null, form: FormData): Promise<RevealedSecret> {
   const user = await requireUser();
@@ -19,14 +18,4 @@ export async function createProjectAction(_prev: RevealedSecret | null, form: Fo
     if (e instanceof MerchantLimitError || e instanceof MerchantNameError) return { ok: false, error: e.message };
     throw e;
   }
-}
-
-export async function rollSecretKeyAction(merchantId: string): Promise<RevealedSecret> {
-  const user = await requireUser();
-  const db = getDb();
-  const owned = await getOwnedMerchant(db, user.id, merchantId);
-  if (!owned) return { ok: false, error: 'Project not found.' };
-  const secretKey = await rollSecretKey(db, merchantId, new Date());
-  revalidatePath('/dashboard/projects');
-  return { ok: true, merchantName: owned.name, secretKey };
 }

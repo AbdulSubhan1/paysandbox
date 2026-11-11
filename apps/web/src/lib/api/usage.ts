@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import type { Db } from '@/lib/db/client';
-import { usageDaily } from '@/lib/db/schema';
+import { apiKeys, usageDaily } from '@/lib/db/schema';
 import { karachiDay, secondsUntilKarachiMidnight } from '@/lib/time';
 import { ApiError } from './errors';
 
@@ -46,4 +46,28 @@ export function dailyLimitError(counter: UsageCounter, usage: UsageResult): ApiE
     undefined,
     { 'Retry-After': String(usage.retryAfterSeconds) },
   );
+}
+
+/**
+ * Finds the merchant for a secret-key hash (not expired) and counts one API request, in one statement, so an API
+ * call spends one database round trip before its handler instead of two. Null = no such key; nothing is counted.
+ */
+export async function countRequestForKey(db: Db, keyHash: string, now: Date): Promise<{ merchantId: string; usage: UsageResult } | null> {
+  const res = await db.execute(sql`
+    with k as (
+      select ${apiKeys.merchantId} as merchant_id from ${apiKeys}
+      where ${apiKeys.keyHash} = ${keyHash} and (${apiKeys.expiresAt} is null or ${apiKeys.expiresAt} > ${now.toISOString()}::timestamptz)
+      limit 1
+    )
+    insert into ${usageDaily} (merchant_id, day, api_requests)
+    select merchant_id, ${karachiDay(now)}, 1 from k
+    on conflict (merchant_id, day) do update set api_requests = ${usageDaily}.api_requests + 1
+    returning merchant_id, api_requests`);
+  const [row] = (res as unknown as { rows: { merchant_id: string; api_requests: number }[] }).rows;
+  if (!row) return null;
+  const used = Number(row.api_requests);
+  return {
+    merchantId: row.merchant_id,
+    usage: { allowed: used <= CAPS.api_requests, used, cap: CAPS.api_requests, retryAfterSeconds: secondsUntilKarachiMidnight(now) },
+  };
 }

@@ -19,7 +19,8 @@ test('a new project shows its secret key once, then only the last 4 (PS-DEV-003)
   expect(secret).toMatch(/^sk_test_[0-9A-Za-z]{32}$/);
   await dialog.getByRole('button', { name: /copied it/ }).click();
 
-  await page.reload();
+  const href = await page.getByRole('link', { name: 'Open dashboard' }).getAttribute('href');
+  await page.goto(`${href}/developers`);
   await expect(page.getByText(`sk_test_…${secret.slice(-4)}`)).toBeVisible();
   await expect(page.getByText(secret)).toHaveCount(0);
 });
@@ -34,6 +35,7 @@ test('rolling the secret key shows the new key and closes the confirm dialog', a
   await page.getByLabel('Project name').fill('Roll Store');
   await page.getByRole('button', { name: 'Create project' }).click();
   await page.getByRole('dialog', { name: 'Your secret key' }).getByRole('button', { name: /copied it/ }).click();
+  await page.goto(`${await page.getByRole('link', { name: 'Open dashboard' }).getAttribute('href')}/developers`);
 
   await page.getByRole('button', { name: 'Roll secret key' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Roll key' }).click();
@@ -63,6 +65,7 @@ test('a project takes an https webhook endpoint and shows, then rolls, its signi
   await page.getByLabel('Project name').fill('Webhook Store');
   await page.getByRole('button', { name: 'Create project' }).click();
   await page.getByRole('dialog', { name: 'Your secret key' }).getByRole('button', { name: /copied it/ }).click();
+  await page.goto(`${await page.getByRole('link', { name: 'Open dashboard' }).getAttribute('href')}/webhooks`);
 
   const url = page.getByLabel('Webhook endpoint URL');
   await url.fill('http://10.0.0.5/x');

@@ -68,6 +68,10 @@ export async function sendTestEvent(
 ): Promise<{ ok: true; eventId: string } | { ok: false; reason: 'no_endpoint' | 'daily_limit' }> {
   const endpoint = await getWebhookEndpoint(db, merchantId);
   if (!endpoint?.enabled) return { ok: false, reason: 'no_endpoint' };
-  if (!(await consumeUsage(db, merchantId, 'test_events', now)).allowed) return { ok: false, reason: 'daily_limit' };
-  return { ok: true, eventId: await recordEvent(db, { merchantId, type, payload: sampleObject(type, now), now }) };
+  // One transaction: if recording the event fails, the test event isn't counted against the daily cap either.
+  return db.transaction(async (t) => {
+    const tx = t as unknown as Db;
+    if (!(await consumeUsage(tx, merchantId, 'test_events', now)).allowed) return { ok: false, reason: 'daily_limit' } as const;
+    return { ok: true, eventId: await recordEvent(tx, { merchantId, type, payload: sampleObject(type, now), now }) } as const;
+  });
 }

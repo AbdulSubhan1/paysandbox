@@ -1,3 +1,4 @@
+import { addActivity } from '@/lib/payments/activity';
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '@/lib/db/client';
 import { disputes, payments } from '@/lib/db/schema';
@@ -5,7 +6,6 @@ import { recordEvent } from '@/lib/events/record';
 import { newId } from '@/lib/ids';
 import { enqueueJob, type JobHandler } from '@/lib/jobs/jobs';
 import { formatPkr } from '@/lib/money';
-import { addActivity } from '@/lib/payments/pay';
 import { assertTransition } from '@/lib/payments/state';
 
 export const DISPUTE_RESPOND_DAYS = 7;
