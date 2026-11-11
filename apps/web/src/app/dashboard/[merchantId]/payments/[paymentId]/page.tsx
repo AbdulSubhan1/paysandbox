@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { type ReactNode, Suspense } from 'react';
+import { DisputePanel } from '@/components/dashboard/DisputePanel';
 import { IdText } from '@/components/dashboard/IdText';
+import { RefundForm } from '@/components/dashboard/RefundForm';
+import { SimulateDisputeButton } from '@/components/dashboard/SimulateDisputeButton';
 import { StatusBadge } from '@/components/dashboard/StatusBadge';
 import { StatusTimeline } from '@/components/dashboard/StatusTimeline';
 import { TEST_CARDS } from '@/lib/card-guard/catalogue';
@@ -10,6 +13,7 @@ import { getDb } from '@/lib/db/client';
 import { formatPkt } from '@/lib/format';
 import { requireProject } from '@/lib/merchants/require-project';
 import { formatPkr } from '@/lib/money';
+import { closeDisputeAction, refundPaymentAction, simulateDisputeAction } from './actions';
 
 type Props = PageProps<'/dashboard/[merchantId]/payments/[paymentId]'>;
 
@@ -30,6 +34,9 @@ async function Payment({ params }: Props) {
   const { payment: p, customer } = d;
   const base = `/dashboard/${merchantId}`;
   const card = TEST_CARDS.find((c) => c.key === p.testCard);
+  const refundable = p.status === 'succeeded' || p.status === 'partially_refunded';
+  const canRefund = refundable && d.amountLeft > 0;
+  const canDispute = refundable && !d.dispute;
 
   return (
     <div className="flex flex-col gap-5">
@@ -44,8 +51,17 @@ async function Payment({ params }: Props) {
           </div>
           <IdText value={p.id} />
         </div>
-        <div id="payment-actions" className="flex flex-wrap gap-2" />
+        {canDispute && <SimulateDisputeButton onSimulate={simulateDisputeAction.bind(null, merchantId, p.id)} />}
       </div>
+
+      {d.dispute?.status === 'needs_response' && (
+        <DisputePanel dispute={d.dispute} onClose={closeDisputeAction.bind(null, merchantId, p.id, d.dispute.id)} />
+      )}
+      {canRefund && (
+        <Panel title="Refund this payment">
+          <RefundForm amountLeft={d.amountLeft} onRefund={refundPaymentAction.bind(null, merchantId, p.id)} />
+        </Panel>
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-5">
