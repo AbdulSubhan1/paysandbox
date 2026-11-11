@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { renderToString } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { CardNumberInput } from './CardNumberInput';
 
@@ -10,6 +11,15 @@ const setup = () => {
 };
 
 describe('CardNumberInput', () => {
+  it('is disabled in the server HTML, so nothing can be typed before the guard runs', () => {
+    const html = renderToString(<CardNumberInput id="card" onChange={() => {}} />);
+    expect(html).toMatch(/<input[^>]*disabled/);
+  });
+
+  it('is enabled once running in the browser', () => {
+    expect(setup().input).toBeEnabled();
+  });
+
   it('formats a test card in groups of 4 and reports it complete (PS-CG-001)', async () => {
     const { onChange, input } = setup();
     await userEvent.type(input, '4242424242424242');

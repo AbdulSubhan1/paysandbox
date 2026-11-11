@@ -15,8 +15,14 @@ export async function createSession(request: APIRequestContext, sk: string = E2E
   return res.json();
 }
 
+/** The checkout streams in after the load event and the card field stays disabled until its guard runs. */
+export async function waitForCheckout(page: Page) {
+  await expect(page.getByLabel('Card information')).toBeEnabled();
+}
+
 /** Fills the checkout with valid details and the given test card (by clicking it in the picker or typing). */
 export async function fillCheckout(page: Page, card: string) {
+  await waitForCheckout(page);
   await page.getByLabel('Email').fill('ayesha@example.com');
   const spaced = card.replace(/(\d{4})(?=\d)/g, '$1 ');
   const pick = page.getByRole('button', { name: new RegExp(spaced) });

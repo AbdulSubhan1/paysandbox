@@ -1,12 +1,13 @@
 'use client';
 
-import { type Ref, useId, useState } from 'react';
+import { type Ref, useId, useState, useSyncExternalStore } from 'react';
 import { type GuardResult, guardCardInput, normalizeDigits } from '@/lib/card-guard/guard';
 
 const REFUSED =
   "That isn't a PaySandbox test card. Real card numbers are refused here and cleared from the field. They are never sent, saved or logged. Pick one of the test cards below.";
 
 const group = (digits: string) => digits.replace(/(\d{4})(?=\d)/g, '$1 ');
+const noop = () => () => {};
 
 /** Sets an input's value so React's onChange fires (used by the test-card picker). */
 export function fillInput(input: HTMLInputElement, value: string) {
@@ -16,7 +17,8 @@ export function fillInput(input: HTMLInputElement, value: string) {
 
 /**
  * The card number lives only in this DOM input, never in React state. A number that is not the start of a
- * test card is cleared after 4 digits and the refusal is announced.
+ * test card is cleared after 4 digits and the refusal is announced. The field is disabled until React has
+ * hydrated it, so nothing can be typed before the guard is running.
  */
 export function CardNumberInput({
   id,
@@ -32,6 +34,7 @@ export function CardNumberInput({
   const messageId = useId();
   const [refused, setRefused] = useState(false);
   const [brand, setBrand] = useState<string | null>(null);
+  const hydrated = useSyncExternalStore(noop, () => true, () => false);
 
   return (
     <div className="relative">
@@ -41,6 +44,7 @@ export function CardNumberInput({
       <input
         ref={ref}
         id={id}
+        disabled={!hydrated}
         inputMode="numeric"
         autoComplete="off"
         maxLength={19}

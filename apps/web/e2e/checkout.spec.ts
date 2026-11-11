@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
-import { banner, createSession, fillCheckout, payButton } from './helpers';
+import { banner, createSession, fillCheckout, payButton, waitForCheckout } from './helpers';
 
 async function expectNoSeriousA11yIssues(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
@@ -44,6 +44,7 @@ test('a real-looking card is cleared and nothing is sent @smoke', async ({ page,
   const bodies: string[] = [];
   page.on('request', (r) => bodies.push(r.postData() ?? ''));
   const card = page.getByLabel('Card information');
+  await waitForCheckout(page);
   await card.pressSequentially('5398');
   await expect(card).toHaveValue('');
   await expect(page.getByText(/isn't a PaySandbox test card/)).toBeVisible();
