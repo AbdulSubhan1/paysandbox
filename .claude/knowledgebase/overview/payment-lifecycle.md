@@ -38,7 +38,7 @@ open session ──pay──▶ processing ──▶ succeeded ──partial ref
 - When a dispute is won, the system shall put the payment back in the state it had before the dispute.
 
 ## Events sent to the merchant
-`payment.succeeded`, `payment.failed`, `payment.requires_action`, `refund.created`, `dispute.created`, `dispute.closed`. Each carries a snapshot of the object at that moment, amounts in paisa, and `livemode: false`.
+`payment.succeeded`, `payment.failed`, `payment.requires_action`, `refund.created`, `dispute.created`, `dispute.closed`. Each carries a snapshot of the object at that moment, amounts in the smallest unit of the project's currency with the `currency` code, and `livemode: false`.
 
 ## Open questions
 - None.

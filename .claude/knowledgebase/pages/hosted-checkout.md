@@ -7,7 +7,7 @@ PaySandbox's own payment page. The customer pays a checkout session with a test 
 
 ## What it shows
 - The TEST MODE banner, always.
-- The merchant's name and the order summary (line items and total in PKR).
+- The merchant's name and the order summary (line items and total in the project's currency).
 - A card form (email, name, card number, expiry, CVC) and a picker with the main test cards.
 - After paying: a success screen with a button back to the merchant, or a decline screen with the reason and "Try another card".
 - For card 3220: the simulated "Sandbox Bank" OTP screen.

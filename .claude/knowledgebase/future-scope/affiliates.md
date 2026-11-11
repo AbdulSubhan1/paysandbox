@@ -13,7 +13,7 @@ Partners (affiliates, influencers, agents) get a referral link or code. When a c
 - Each affiliate gets a statement: clicks (if tracked by the site), sales, commissions by state.
 
 ## Rules
-- The system shall calculate commissions in paisa from the amount actually kept (after refunds).
+- The system shall calculate commissions in the smallest currency unit from the amount actually kept (after refunds).
 - The system shall reverse a commission when its payment is refunded or a dispute is lost, even after it was approved.
 - The system shall send webhooks when a commission is created, approved, reversed or paid, so a CRM can show it to the partner manager.
 

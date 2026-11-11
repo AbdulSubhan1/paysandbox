@@ -7,7 +7,7 @@ Everything a developer needs to connect a site: keys, ready-to-copy code and tod
 
 ## What it shows
 - **Publishable key** in full, and the **secret key** as its last 4 characters.
-- Code snippets: create a checkout session (curl and a Next.js route handler) and verify a webhook.
+- Code snippets: create a checkout session (curl and a Next.js route handler, in the project's currency) and verify a webhook.
 - **Today's usage** against the daily caps: API requests, checkout sessions, webhook attempts, test events. Resets at midnight Pakistan time.
 
 ## What the user can do

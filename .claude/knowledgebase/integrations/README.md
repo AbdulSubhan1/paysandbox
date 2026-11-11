@@ -15,7 +15,7 @@ A separate website, inspired by the flow of a UAE insurance comparison site, tha
 
 Step 1 (agreed):
 - A visitor fills a lead form → sees plans → picks a plan with add-ons → pays on the PaySandbox hosted checkout → lands on a thank-you page.
-- Add-ons are per plan: **included** (sent as a line item at 0), **optional paid**, or **pre-ticked**. Everything goes to PaySandbox as **one payment with line items**.
+- Add-ons are per plan: **included** (sent as a line item at 0), **optional paid**, or **pre-ticked**. Everything goes to PaySandbox as **one payment with line items**, in a **USD project** so amounts match PolicyDesk.
 - An advisor is shown in the website header from the plans page on.
 - The `payment.succeeded` webhook marks the order paid.
 

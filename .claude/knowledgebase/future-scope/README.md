@@ -29,7 +29,7 @@ Size: **S** = a few days, **M** = about a week, **L** = two weeks or more.
 | 6 | **[Mobile wallet (simulated)](local-payment-methods.md#mobile-wallet)** | M | Most Pakistani customers pay with a wallet, not a card. |
 | 7 | **[Bank transfer (simulated)](local-payment-methods.md#bank-transfer)**: payment stays pending until funds "arrive" | M | Teaches the pending state, common for large payments like insurance premiums. |
 | 8 | **[Cash on delivery tracking](local-payment-methods.md#cash-on-delivery)** | S | Most local e-commerce still uses it; the merchant marks it collected. |
-| 9 | **Multi-currency display** (AED, USD as well as PKR; no conversion) | M | The UAE-style website and overseas clients can show their own currency. |
+| 9 | ~~Multi-currency~~ **Done (2026-11-11):** each project picks PKR, USD, AED, SAR, GBP or EUR; no conversion | — | Shipped early because PolicyDesk works in USD. |
 
 ### Wave 3: marketplaces and partners
 | # | Feature | Size | Why |
@@ -76,4 +76,4 @@ Size: **S** = a few days, **M** = about a week, **L** = two weeks or more.
 
 ## Open questions
 - Abdul to confirm the wave order; the current order puts the insurance website's needs first.
-- Whether multi-currency should move into wave 1 if the website uses AED.
+- Whether projects should ever take more than one currency (would need per-currency totals and payouts).

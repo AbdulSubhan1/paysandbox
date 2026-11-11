@@ -2,7 +2,8 @@
 
 | Term | Meaning |
 |---|---|
-| **Paisa** | 1/100 of a rupee. All amounts are stored and sent in paisa (PKR 1,500 = 150000). |
+| **Project currency** | The one currency a project charges in: PKR, USD, AED, SAR, GBP or EUR. It can change only until the project's first checkout. |
+| **Smallest unit** | 1/100 of the currency: paisa, cents, fils. All amounts are stored and sent in it (PKR 1,500 = 150000; USD 299.99 = 29999). |
 | **Publishable key** (`pk_test_…`) | Safe to show in a browser. It can only open the checkout. |
 | **Secret key** (`sk_test_…`) | Server-only. Starts checkouts, reads payments, makes refunds. |
 | **Checkout session** (`cs_test_…`) | One request to pay; it gives the customer a checkout address. |
