@@ -48,13 +48,17 @@ export async function runJob(db: Db, jobId: string, now: Date, handlers: JobHand
   return 'ran';
 }
 
-/** Runs due jobs oldest first. One failing job is reported and does not stop the others. */
+/**
+ * Runs due jobs oldest first. One failing job is reported and does not stop the others. `deadline` (epoch ms) stops
+ * claiming new jobs, so a time-limited caller (the cron) finishes before the platform cuts it off.
+ */
 export async function runDueJobs(
   db: Db,
   now: Date,
   handlers: JobHandlers,
-  filter: { merchantId?: string; limit?: number } = {},
+  filter: { merchantId?: string; limit?: number; deadline?: number } = {},
 ): Promise<number> {
+  const started = Date.now();
   const due = await db
     .select({ id: jobs.id, kind: jobs.kind })
     .from(jobs)
@@ -63,8 +67,11 @@ export async function runDueJobs(
     .limit(filter.limit ?? 50);
   let ran = 0;
   for (const j of due) {
+    if (filter.deadline !== undefined && Date.now() > filter.deadline) break;
+    // Each job's clock moves on with the batch, so its lease runs from when it is claimed, not from the batch start.
+    const claimedAt = new Date(now.getTime() + (Date.now() - started));
     try {
-      if ((await runJob(db, j.id, now, handlers)) === 'ran') ran++;
+      if ((await runJob(db, j.id, claimedAt, handlers)) === 'ran') ran++;
     } catch (e) {
       reportError(`job ${j.kind}`, e);
     }

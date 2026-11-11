@@ -15,7 +15,8 @@ export function getScheduler(): Scheduler {
         url: `${appUrl()}/api/internal/jobs`,
         body: { jobId: job.id },
         notBefore: Math.floor(job.runAt.getTime() / 1000),
-        deduplicationId: job.id,
+        // QStash drops a repeated deduplication id for 90 days: a re-armed job needs a new one, so it includes runAt.
+        deduplicationId: `${job.id}-${job.runAt.getTime()}`,
       });
     },
   };

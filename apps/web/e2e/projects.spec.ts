@@ -24,6 +24,27 @@ test('a new project shows its secret key once, then only the last 4 (PS-DEV-003)
   await expect(page.getByText(secret)).toHaveCount(0);
 });
 
+test('rolling the secret key shows the new key and closes the confirm dialog', async ({ page }) => {
+  const res = await page.request.post('/api/auth/sign-up/email', {
+    headers: { origin: E2E_BASE_URL },
+    data: { email: `qa-roll-${Date.now()}@e2e.test`, password: 'correct-horse-battery-9', name: 'QA' },
+  });
+  expect(res.ok()).toBe(true);
+  await page.goto('/dashboard/projects');
+  await page.getByLabel('Project name').fill('Roll Store');
+  await page.getByRole('button', { name: 'Create project' }).click();
+  await page.getByRole('dialog', { name: 'Your secret key' }).getByRole('button', { name: /copied it/ }).click();
+
+  await page.getByRole('button', { name: 'Roll secret key' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Roll key' }).click();
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  const dialog = page.getByRole('dialog', { name: 'Your secret key' });
+  await expect(dialog.getByRole('textbox')).toHaveValue(/^sk_test_[0-9A-Za-z]{32}$/);
+  await dialog.getByRole('button', { name: /copied it/ }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('alertdialog')).toHaveCount(0); // the confirm dialog must not be waiting underneath
+});
+
 test('someone not on the allowlist cannot sign up', async ({ page }) => {
   const res = await page.request.post('/api/auth/sign-up/email', {
     headers: { origin: E2E_BASE_URL },

@@ -11,10 +11,10 @@ import { runDueJobs } from '@/lib/jobs/jobs';
 export async function POST(req: Request): Promise<Response> {
   if (!isE2eMode()) notFound();
   const { advanceSeconds } = (await req.json().catch(() => ({}))) as { advanceSeconds?: number };
-  const now = new Date(Date.now() + (Number(advanceSeconds) || 0) * 1000);
+  const advanceMs = (Number(advanceSeconds) || 0) * 1000;
   let ran = 0;
   for (let pass = 0; pass < 5; pass++) {
-    const n = await runDueJobs(getDb(), now, jobHandlers, { limit: 200 });
+    const n = await runDueJobs(getDb(), new Date(Date.now() + advanceMs), jobHandlers, { limit: 200 });
     if (n === 0) break;
     ran += n;
   }

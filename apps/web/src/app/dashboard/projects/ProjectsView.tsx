@@ -23,6 +23,36 @@ import { type EndpointSummary, WebhookEndpointCard } from './WebhookEndpointCard
 
 type Project = { id: string; name: string; publishableKey: string | null; secretLast4: string | null; endpoint: EndpointSummary };
 
+/** "Roll secret key" with its confirm dialog. AlertDialogAction is a plain button, so the dialog is closed here. */
+function RollKeyButton({ project, onRolled }: { project: Project; onRolled: (r: RevealedSecret) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger render={<Button variant="outline" size="sm" />}>Roll secret key</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Roll the secret key for {project.name}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            You get a new secret key now. The current one keeps working for 24 hours, then stops.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={async () => {
+              const r = await rollSecretKeyAction(project.id);
+              setOpen(false);
+              onRolled(r);
+            }}
+          >
+            Roll key
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function CopyField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -72,21 +102,7 @@ export function ProjectsView({ projects, canCreate, max }: { projects: Project[]
                 <div className="text-sm font-medium">Secret key</div>
                 <div className="font-mono text-sm text-muted-foreground">sk_test_…{p.secretLast4}</div>
               </div>
-              <AlertDialog>
-                <AlertDialogTrigger render={<Button variant="outline" size="sm" />}>Roll secret key</AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Roll the secret key for {p.name}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You get a new secret key now. The current one keeps working for 24 hours, then stops.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={async () => setRevealed(await rollSecretKeyAction(p.id))}>Roll key</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <RollKeyButton project={p} onRolled={setRevealed} />
             </div>
             <WebhookEndpointCard merchantId={p.id} endpoint={p.endpoint} />
           </CardContent>

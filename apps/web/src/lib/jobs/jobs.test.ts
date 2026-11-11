@@ -59,6 +59,29 @@ describe('jobs outbox', () => {
     expect(await runJob(db, id, plus(61), handlersWith({}))).toBe('ran');
   });
 
+  it('stops claiming jobs once the deadline has passed (the cron must finish inside its time limit)', async () => {
+    await enqueueJob(db, { merchantId, kind: 'expire_session', refId: 'a', runAt: plus(-10), now });
+    await enqueueJob(db, { merchantId, kind: 'expire_session', refId: 'b', runAt: plus(-10), now });
+    const slow = handlersWith({ expire_session: async () => (await new Promise((r) => setTimeout(r, 30)), { done: true }) });
+    expect(await runDueJobs(db, now, slow, { deadline: Date.now() + 10 })).toBe(1);
+    expect(await runDueJobs(db, now, slow, { deadline: Date.now() - 1 })).toBe(0);
+  });
+
+  it('gives each job in a batch a full lease from when it is claimed, not from when the batch started', async () => {
+    const a = await enqueueJob(db, { merchantId, kind: 'expire_session', refId: 'a', runAt: plus(-20), now });
+    const b = await enqueueJob(db, { merchantId, kind: 'expire_session', refId: 'b', runAt: plus(-10), now });
+    let leaseOfB: Date | null = null;
+    const handlers = handlersWith({
+      expire_session: async (_db, j) => {
+        if (j.id === a) await new Promise((r) => setTimeout(r, 200));
+        else leaseOfB = (await job(b)).lockedUntil;
+        return { done: true };
+      },
+    });
+    await runDueJobs(db, now, handlers);
+    expect(leaseOfB!.getTime()).toBeGreaterThanOrEqual(plus(60).getTime() + 200);
+  });
+
   it('runs due jobs oldest first, optionally for one merchant', async () => {
     const other = (await makeMerchant(db)).id;
     const order: string[] = [];

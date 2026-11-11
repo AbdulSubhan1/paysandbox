@@ -23,8 +23,20 @@ describe('scheduler', () => {
       url: 'https://paysandbox.vercel.app/api/internal/jobs',
       body: { jobId: 'job_1' },
       notBefore: Date.UTC(2026, 10, 11, 10) / 1000,
-      deduplicationId: 'job_1',
+      deduplicationId: `job_1-${Date.UTC(2026, 10, 11, 10)}`,
     });
+  });
+
+  it('gives a re-armed job a new deduplication id, so QStash does not drop the retry', async () => {
+    // QStash keeps deduplication ids for 90 days and silently drops repeats: a retry must not reuse the first id.
+    vi.stubEnv('QSTASH_TOKEN', 'token');
+    const s = getScheduler();
+    await s.publish({ id: 'job_1', runAt: new Date('2026-11-11T10:01:00Z') });
+    await s.publish({ id: 'job_1', runAt: new Date('2026-11-11T10:06:00Z') });
+    const ids = (publishJSON.mock.calls as unknown as [{ deduplicationId: string }][]).map(([c]) => c.deduplicationId);
+    expect(new Set(ids).size).toBe(2);
+    await s.publish({ id: 'job_1', runAt: new Date('2026-11-11T10:06:00Z') }); // same run time from two publishers: still deduped
+    expect((publishJSON.mock.calls as unknown as [{ deduplicationId: string }][]).at(-1)![0].deduplicationId).toBe(ids[1]);
   });
 
   it('does nothing without QSTASH_TOKEN', async () => {

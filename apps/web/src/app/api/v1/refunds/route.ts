@@ -4,6 +4,9 @@ import { flushJobsAfterResponse } from '@/lib/jobs/flush';
 import { parseCreateRefund } from '@/lib/refunds/input';
 import { createRefund, toRefundObject } from '@/lib/refunds/refunds';
 
+// Room for the after-response webhook attempts (lib/jobs/flush.ts).
+export const maxDuration = 60;
+
 export const POST = withApi(
   async (ctx, req) => {
     let body: unknown;

@@ -2,6 +2,9 @@ import { flushJobsAfterResponse } from '@/lib/jobs/flush';
 import { handleCheckoutPost, strings } from '@/lib/payments/checkout-http';
 import { submitOtp } from '@/lib/payments/otp';
 
+// Room for the after-response webhook attempts (lib/jobs/flush.ts).
+export const maxDuration = 60;
+
 export async function POST(req: Request, ctx: RouteContext<'/c/[sessionId]/otp'>) {
   const { sessionId } = await ctx.params;
   flushJobsAfterResponse({ sessionId });

@@ -2,6 +2,9 @@ import { flushJobsAfterResponse } from '@/lib/jobs/flush';
 import { checkoutError, handleCheckoutPost, strings } from '@/lib/payments/checkout-http';
 import { payCheckoutSession } from '@/lib/payments/pay';
 
+// Room for the after-response webhook attempts (lib/jobs/flush.ts).
+export const maxDuration = 60;
+
 // A short pause so the customer sees "Processing…", like a real gateway. Skipped in tests.
 const PROCESSING_DELAY_MS = process.env.NODE_ENV === 'test' ? 0 : 800;
 

@@ -4,6 +4,9 @@ import { flushJobsAfterResponse } from '@/lib/jobs/flush';
 import { parseCreateSession } from '@/lib/sessions/input';
 import { createCheckoutSession, toSessionObject } from '@/lib/sessions/sessions';
 
+// Room for the after-response webhook attempts (lib/jobs/flush.ts).
+export const maxDuration = 60;
+
 export const POST = withApi(
   async (ctx, req) => {
     let body: unknown;
