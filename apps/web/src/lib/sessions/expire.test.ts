@@ -4,7 +4,9 @@ import { GET as getSessionRoute } from '@/app/api/v1/checkout_sessions/[id]/rout
 import type { Db } from '@/lib/db/client';
 import { checkoutSessions, events, jobs, paymentActivity, payments } from '@/lib/db/schema';
 import { createMerchant } from '@/lib/merchants/merchants';
+import { submitOtp } from '@/lib/payments/otp';
 import { DECLINES } from '@/lib/payments/outcome';
+import { payCheckoutSession } from '@/lib/payments/pay';
 import { addHours } from '@/lib/time';
 import { callRoute } from '@/test/api';
 import { createTestDb } from '@/test/db';
@@ -23,12 +25,23 @@ beforeEach(async () => {
 const session = async (id: string) => (await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, id)))[0];
 
 describe('session expiry timer', () => {
-  it('schedules one expire_session job at expires_at when a session is created', async () => {
-    const row = await createCheckoutSession(
+  it('schedules no timer for a new session: most sessions never need one (QStash free plan: 500 messages a day)', async () => {
+    await createCheckoutSession(
       { db, merchantId, now, requestId: 'req_1', idempotencyKey: null },
       { amount: 510000, currency: 'pkr', lineItems: [{ name: 'Hoodie', quantity: 1, amount: 510000 }], successUrl: 'https://s.test/ok', cancelUrl: 'https://s.test/no', customerEmail: null },
     );
-    expect(await db.select().from(jobs)).toEqual([expect.objectContaining({ kind: 'expire_session', refId: row.id, runAt: addHours(now, 24) })]);
+    expect(await db.select().from(jobs)).toHaveLength(0);
+  });
+
+  it('schedules one expire_session timer when a payment starts waiting for OTP, even after a second OTP attempt', async () => {
+    const s = await makeSession(db, merchantId, { expiresAt: addHours(now, 24) });
+    const pay = (attemptId: string) =>
+      payCheckoutSession(db, { sessionId: s.id, attemptId, email: 'a@x.pk', name: 'A', cardNumber: '4000000000003220', expiry: '12/29' }, now);
+    const first = await pay('a1');
+    expect(first.status).toBe('requires_action');
+    await submitOtp(db, { sessionId: s.id, paymentId: first.paymentId, cancel: true }, now);
+    expect((await pay('a2')).status).toBe('requires_action');
+    expect(await db.select().from(jobs)).toEqual([expect.objectContaining({ kind: 'expire_session', refId: s.id, runAt: addHours(now, 24) })]);
   });
 
   it('expires an open session and fails its pending OTP payment', async () => {

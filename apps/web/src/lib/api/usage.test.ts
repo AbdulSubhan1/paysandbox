@@ -41,6 +41,7 @@ describe('consumeUsage (PS-AUTH-010/011)', () => {
   });
 
   it('has the published caps', () => {
-    expect(CAPS).toEqual({ api_requests: 1000, checkout_sessions: 200, webhook_attempts: 500, test_events: 50 });
+    // webhook_attempts fits the QStash free plan (500 messages a day for the whole account; first attempts don't use it)
+    expect(CAPS).toEqual({ api_requests: 1000, checkout_sessions: 200, webhook_attempts: 200, test_events: 50 });
   });
 });

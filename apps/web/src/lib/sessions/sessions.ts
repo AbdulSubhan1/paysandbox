@@ -4,7 +4,6 @@ import { consumeUsage, dailyLimitError } from '@/lib/api/usage';
 import type { Db } from '@/lib/db/client';
 import { checkoutSessions, merchants, paymentActivity } from '@/lib/db/schema';
 import { newId } from '@/lib/ids';
-import { enqueueJob } from '@/lib/jobs/jobs';
 import { addHours } from '@/lib/time';
 import type { CreateSessionInput } from './input';
 
@@ -46,7 +45,6 @@ export async function createCheckoutSession(ctx: ApiContext, input: CreateSessio
       detail: ctx.idempotencyKey ? { idempotency_key: ctx.idempotencyKey } : null,
       createdAt: ctx.now,
     });
-    await enqueueJob(tx as unknown as Db, { merchantId: ctx.merchantId, kind: 'expire_session', refId: row.id, runAt: row.expiresAt, now: ctx.now });
     return row;
   });
 }

@@ -27,7 +27,7 @@ Plan 1's Global Constraints all still apply. In addition:
 - Disputes: amount = amount left at opening; `respond_by` = opened + 7 days; one dispute per payment, ever; won → payment returns to `previous_payment_status`; lost → `dispute_lost`. Card 0259 opens one 60 s after it succeeds, with reason `fraudulent`. No public API for disputes in v1.
 - Session expiry: one `expire_session` job at `expires_at`. It moves an `open` session to `expired` and any `requires_action` payment on it to `failed` (`authentication_failed`), recording `payment.failed`. **Reads still never write.**
 - Every payment status change goes through `canTransition()` (`lib/payments/state.ts`); an illegal one throws.
-- Caps: webhook attempts 500/day per merchant (over the cap, the job is moved to the next Karachi midnight, not dropped); "Send test event" 50/day.
+- Caps: webhook attempts 200/day per merchant (lowered from the design's 500 at deploy: QStash free plan = 500 messages/day per account) (over the cap, the job is moved to the next Karachi midnight, not dropped); "Send test event" 50/day.
 - Never log webhook secrets, receiver response bodies or event payloads. The snippet goes only to `webhook_attempts`.
 - New env vars: `WEBHOOK_SECRET_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `CRON_SECRET`. Without `QSTASH_TOKEN` the scheduler is a no-op (local dev, CI, E2E).
 - New ID prefixes: `we_` (endpoint), `dlv_` (delivery), `att_` (attempt), `re_` (refund), `dp_` (dispute), `job_` (job).

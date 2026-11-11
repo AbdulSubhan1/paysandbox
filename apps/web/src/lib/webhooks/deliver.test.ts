@@ -7,6 +7,7 @@ import type { Db } from '@/lib/db/client';
 import { jobs, usageDaily, webhookAttempts, webhookDeliveries, webhookEndpoints } from '@/lib/db/schema';
 import { recordEvent } from '@/lib/events/record';
 import { type JobHandlers, runJob } from '@/lib/jobs/jobs';
+import { CAPS } from '@/lib/api/usage';
 import { karachiDay, secondsUntilKarachiMidnight } from '@/lib/time';
 import { createTestDb } from '@/test/db';
 import { makeEndpoint, makeMerchant } from '@/test/factories';
@@ -179,7 +180,7 @@ describe('attemptDelivery', () => {
     const srv = await startServer(status([200]));
     const { deliveryId } = await eventFor(srv.url);
     const t = new Date();
-    await db.insert(usageDaily).values({ merchantId, day: karachiDay(t), webhookAttempts: 500 });
+    await db.insert(usageDaily).values({ merchantId, day: karachiDay(t), webhookAttempts: CAPS.webhook_attempts });
     const out = await attemptDelivery(db, deliveryId, t, deps);
     expect(out).toEqual({ retryAt: new Date(t.getTime() + secondsUntilKarachiMidnight(t) * 1000) });
     expect(srv.received).toHaveLength(0);
