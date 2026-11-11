@@ -1,0 +1,154 @@
+openapi: 3.1.0
+info:
+  title: PaySandbox API
+  version: 1.0.0
+  description: Test-mode-only payment gateway. No real money ever moves. Amounts are integers in paisa.
+servers:
+  - url: https://paysandbox.vercel.app/api/v1
+security:
+  - secretKey: []
+paths:
+  /checkout_sessions:
+    post:
+      summary: Create a checkout session
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema: { type: string, minLength: 1, maxLength: 255 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCheckoutSession' }
+      responses:
+        '200': { description: Created (or replayed), content: { application/json: { schema: { $ref: '#/components/schemas/CheckoutSession' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /checkout_sessions/{id}:
+    get:
+      summary: Retrieve a checkout session
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CheckoutSession' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /payments:
+    get:
+      summary: List payments, newest first
+      parameters:
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 10 } }
+        - { in: query, name: starting_after, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PaymentList' } } } }
+  /payments/{id}:
+    get:
+      summary: Retrieve a payment
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Payment' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    secretKey:
+      type: http
+      scheme: bearer
+      description: Your sk_test_ secret key (Bearer, or HTTP Basic with the key as username).
+  responses:
+    Error:
+      description: Error
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  schemas:
+    LineItem:
+      type: object
+      additionalProperties: false
+      required: [name, quantity, amount]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        quantity: { type: integer, minimum: 1, maximum: 1000 }
+        amount: { type: integer, minimum: 0, description: Paisa }
+    CreateCheckoutSession:
+      type: object
+      required: [amount, currency, line_items, success_url, cancel_url]
+      properties:
+        amount: { type: integer, minimum: 100, maximum: 100000000 }
+        currency: { type: string, enum: [pkr, PKR] }
+        line_items: { type: array, minItems: 1, maxItems: 20, items: { $ref: '#/components/schemas/LineItem' } }
+        success_url: { type: string, format: uri }
+        cancel_url: { type: string, format: uri }
+        customer_email: { type: string, format: email }
+    CheckoutSession:
+      type: object
+      additionalProperties: false
+      required: [id, object, url, amount, currency, line_items, customer_email, success_url, cancel_url, status, payment, expires_at, created, livemode]
+      properties:
+        id: { type: string, pattern: '^cs_test_[0-9A-Za-z]{24}$' }
+        object: { const: checkout_session }
+        url: { type: string, format: uri }
+        amount: { type: integer }
+        currency: { const: pkr }
+        line_items: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
+        customer_email: { type: [string, 'null'] }
+        success_url: { type: string, format: uri }
+        cancel_url: { type: string, format: uri }
+        status: { enum: [open, complete, expired] }
+        payment: { type: [string, 'null'] }
+        expires_at: { type: integer, description: Unix seconds }
+        created: { type: integer, description: Unix seconds }
+        livemode: { const: false }
+    Payment:
+      type: object
+      additionalProperties: false
+      required: [id, object, amount, amount_refunded, currency, status, customer, card, failure_code, decline_code, checkout_session, created, livemode]
+      properties:
+        id: { type: string, pattern: '^pay_[0-9A-Za-z]{24}$' }
+        object: { const: payment }
+        amount: { type: integer }
+        amount_refunded: { type: integer }
+        currency: { const: pkr }
+        status: { enum: [requires_action, succeeded, failed, partially_refunded, refunded, disputed, dispute_lost] }
+        customer:
+          type: object
+          additionalProperties: false
+          required: [id, name, email]
+          properties:
+            id: { type: string }
+            name: { type: string }
+            email: { type: string }
+        card:
+          type: object
+          additionalProperties: false
+          required: [brand, last4]
+          properties:
+            brand: { enum: [visa, mastercard] }
+            last4: { type: string, pattern: '^[0-9]{4}$' }
+        failure_code: { type: [string, 'null'] }
+        decline_code: { type: [string, 'null'] }
+        checkout_session: { type: string }
+        created: { type: integer }
+        livemode: { const: false }
+    PaymentList:
+      type: object
+      additionalProperties: false
+      required: [object, data, has_more]
+      properties:
+        object: { const: list }
+        data: { type: array, items: { $ref: '#/components/schemas/Payment' } }
+        has_more: { type: boolean }
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [type, code, message]
+          properties:
+            type: { enum: [invalid_request_error, authentication_error, rate_limit_error, idempotency_error, api_error] }
+            code: { type: string }
+            message: { type: string }
+            param: { type: string }

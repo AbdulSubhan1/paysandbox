@@ -80,6 +80,12 @@ describe('withIdempotency', () => {
     expect((await withIdempotency(db, args('retry_me', {}), run)).body).toEqual({ id: 'cs_1' });
   });
 
+  it('does not store a 429, so the same key works once the limit resets', async () => {
+    const limited = async (): Promise<ApiResponse> => ({ status: 429, body: { error: { code: 'daily_limit_reached' } } });
+    await withIdempotency(db, args('tomorrow', {}), limited);
+    expect((await withIdempotency(db, args('tomorrow', {}), run)).status).toBe(200);
+  });
+
   it('stores and replays 4xx responses (PS-IDEM-006)', async () => {
     const bad = async (): Promise<ApiResponse> => ({ status: 400, body: { error: { code: 'amount_too_small' } } });
     await withIdempotency(db, args('bad', { amount: 1 }), bad);

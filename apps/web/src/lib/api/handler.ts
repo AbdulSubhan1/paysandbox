@@ -10,7 +10,7 @@ import { consumeUsage, dailyLimitError } from './usage';
 export type ApiResponse = { status: number; body: unknown; headers?: Record<string, string> };
 export type ApiContext = { db: Db; merchantId: string; now: Date; requestId: string; idempotencyKey: string | null };
 export type ApiHandler = (ctx: ApiContext, req: Request, params: Record<string, string>) => Promise<ApiResponse>;
-export type RouteContext = { params: Promise<Record<string, string>> };
+export type ApiRouteContext = { params: Promise<Record<string, string>> };
 
 const invalidKey = (message: string) => new ApiError(401, 'authentication_error', 'invalid_api_key', message);
 
@@ -60,7 +60,7 @@ function toResponse(r: ApiResponse): Response {
 
 /** Auth → daily cap → idempotency (POST) → handler → request log. Refused-by-cap requests are not logged. */
 export function withApi(handler: ApiHandler, opts: { idempotent?: boolean } = {}) {
-  return async (req: Request, route: RouteContext): Promise<Response> => {
+  return async (req: Request, route: ApiRouteContext): Promise<Response> => {
     const started = Date.now();
     const now = new Date();
     const db = getDb();

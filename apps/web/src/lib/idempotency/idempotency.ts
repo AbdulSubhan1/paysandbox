@@ -33,7 +33,7 @@ function requestHash(a: IdempotencyArgs): string {
 
 /**
  * IETF Idempotency-Key semantics, per merchant, for 24 hours: replay the stored response for the same request,
- * 422 for the same key with a different request, 409 while the first one is still running. 5xx is never stored.
+ * 422 for the same key with a different request, 409 while the first one is still running. 5xx and 429 are never stored.
  */
 export async function withIdempotency(db: Db, args: IdempotencyArgs, run: () => Promise<ApiResponse>): Promise<ApiResponse> {
   const { merchantId, key, now } = args;
@@ -71,7 +71,7 @@ export async function withIdempotency(db: Db, args: IdempotencyArgs, run: () => 
     await db.delete(idempotencyKeys).where(where);
     throw e;
   }
-  if (response.status >= 500) {
+  if (response.status >= 500 || response.status === 429) {
     await db.delete(idempotencyKeys).where(where);
   } else {
     await db
