@@ -29,7 +29,7 @@ async function startServer(reply: (n: number, req: IncomingMessage, res: ServerR
     });
   });
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
-  servers.push({ close: () => server.closeAllConnections() || server.close() });
+  servers.push({ close: () => (server.closeAllConnections(), server.close()) });
   return { url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/hook`, received };
 }
 const status = (codes: number[]) => (n: number, _req: IncomingMessage, res: ServerResponse) =>

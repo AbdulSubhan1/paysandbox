@@ -1,4 +1,5 @@
 import { isIP } from 'node:net';
+import type { ReadableStream } from 'node:stream/web';
 import { eq, sql } from 'drizzle-orm';
 import { Agent, fetch } from 'undici';
 import { consumeUsage } from '@/lib/api/usage';
@@ -27,7 +28,7 @@ export function defaultDeliveryDeps(): DeliveryDeps {
 
 type SendResult = { statusCode: number | null; error: 'timeout' | 'network' | 'blocked_address' | 'redirect' | null; snippet: string | null };
 
-async function readCapped(body: ReadableStream<Uint8Array> | null): Promise<Buffer> {
+async function readCapped(body: ReadableStream | null): Promise<Buffer> {
   if (!body) return Buffer.alloc(0);
   const reader = body.getReader();
   const chunks: Buffer[] = [];
