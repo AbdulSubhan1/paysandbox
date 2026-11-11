@@ -5,13 +5,13 @@ import { listCustomers } from '@/lib/dashboard/customers';
 import { getDb } from '@/lib/db/client';
 import { formatPkt } from '@/lib/format';
 import { requireProject } from '@/lib/merchants/require-project';
-import { formatPkr } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 
 type Props = PageProps<'/dashboard/[merchantId]/customers'>;
 
 async function Customers({ params }: Props) {
   const { merchantId } = await params;
-  await requireProject(merchantId);
+  const { merchant } = await requireProject(merchantId);
   const rows = await listCustomers(getDb(), merchantId);
   return (
     <div className="flex flex-col gap-5">
@@ -43,7 +43,7 @@ async function Customers({ params }: Props) {
                     </Link>
                   </td>
                   <td className="px-4 py-2 tabular-nums">{c.payments}</td>
-                  <td className="px-4 py-2 font-semibold whitespace-nowrap tabular-nums">{formatPkr(c.netPaid)}</td>
+                  <td className="px-4 py-2 font-semibold whitespace-nowrap tabular-nums">{formatMoney(c.netPaid, merchant.currency)}</td>
                   <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">{c.lastPaymentAt ? formatPkt(c.lastPaymentAt) : '—'}</td>
                 </tr>
               ))}

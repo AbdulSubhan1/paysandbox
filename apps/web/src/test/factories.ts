@@ -1,3 +1,4 @@
+import type { Currency } from '@/lib/currency';
 import type { Db } from '@/lib/db/client';
 import { encryptSecret } from '@/lib/crypto/secretbox';
 import { checkoutSessions, customers, merchants, payments, users, webhookEndpoints } from '@/lib/db/schema';
@@ -14,10 +15,10 @@ export async function makeUser(db: Db, overrides: Partial<typeof users.$inferIns
   return row;
 }
 
-export async function makeMerchant(db: Db, opts: { userId?: string; name?: string } = {}) {
+export async function makeMerchant(db: Db, opts: { userId?: string; name?: string; currency?: Currency } = {}) {
   const [row] = await db
     .insert(merchants)
-    .values({ id: newId('mer'), ownerUserId: opts.userId ?? null, name: opts.name ?? 'Chai Code Co.' })
+    .values({ id: newId('mer'), ownerUserId: opts.userId ?? null, name: opts.name ?? 'Chai Code Co.', currency: opts.currency ?? 'pkr' })
     .returning();
   return row;
 }

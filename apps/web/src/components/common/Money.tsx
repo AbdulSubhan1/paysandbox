@@ -1,5 +1,6 @@
-import { formatPkr } from '@/lib/money';
+import type { Currency } from '@/lib/currency';
+import { formatMoney } from '@/lib/money';
 
-export function Money({ paisa, className }: { paisa: number; className?: string }) {
-  return <span className={className}>{formatPkr(paisa)}</span>;
+export function Money({ amount, currency, className }: { amount: number; currency: Currency; className?: string }) {
+  return <span className={className}>{formatMoney(amount, currency)}</span>;
 }

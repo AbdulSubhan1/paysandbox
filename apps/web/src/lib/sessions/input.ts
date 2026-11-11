@@ -1,14 +1,15 @@
 import { ApiError } from '@/lib/api/errors';
 import { validateEmail } from '@/lib/checkout/validate';
+import { CURRENCIES, CURRENCY_INFO, type Currency, parseCurrency } from '@/lib/currency';
 import type { LineItem } from '@/lib/db/schema';
+import { formatMoney } from '@/lib/money';
 
-export const AMOUNT_MIN = 100; // PKR 1.00
-export const AMOUNT_MAX = 100_000_000; // PKR 1,000,000.00
+export const AMOUNT_MIN = 100; // 1.00 in every currency; the maximum is per currency (CURRENCY_INFO)
 export const MAX_LINE_ITEMS = 20;
 
 export type CreateSessionInput = {
   amount: number;
-  currency: 'pkr';
+  currency: Currency;
   lineItems: LineItem[];
   successUrl: string;
   cancelUrl: string;
@@ -47,31 +48,41 @@ function isLineItem(v: unknown): v is LineItem {
   );
 }
 
-/** Validates a create-session body. Throws ApiError(400) naming the first bad parameter. */
-export function parseCreateSession(body: unknown): CreateSessionInput {
+/**
+ * Validates a create-session body for a project charging in `projectCurrency`. `currency` may be left out; if sent it
+ * must be the project's. Throws ApiError(400) naming the first bad parameter.
+ */
+export function parseCreateSession(body: unknown, projectCurrency: Currency): CreateSessionInput {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw invalid('invalid_json', 'Send a JSON object with Content-Type: application/json.');
   }
   const b = body as Record<string, unknown>;
-  for (const param of ['amount', 'currency', 'line_items', 'success_url', 'cancel_url']) {
+  for (const param of ['amount', 'line_items', 'success_url', 'cancel_url']) {
     if (b[param] === undefined || b[param] === null) throw invalid('parameter_missing', `Missing required parameter: ${param}.`, param);
   }
 
-  if (typeof b.amount !== 'number' || !Number.isInteger(b.amount)) {
-    throw invalid('amount_not_integer', 'amount must be a whole number of paisa (e.g. 510000 for PKR 5,100.00).', 'amount');
+  if (b.currency !== undefined && b.currency !== null) {
+    const asked = parseCurrency(b.currency);
+    if (!asked) throw invalid('currency_not_supported', `currency must be one of ${CURRENCIES.join(', ')}.`, 'currency');
+    if (asked !== projectCurrency) {
+      const code = CURRENCY_INFO[projectCurrency].code;
+      throw invalid('currency_mismatch', `This project charges in ${code}. Send currency ${projectCurrency}, or leave it out.`, 'currency');
+    }
   }
-  if (b.amount < AMOUNT_MIN) throw invalid('amount_too_small', 'amount must be at least 100 paisa (PKR 1.00).', 'amount');
-  if (b.amount > AMOUNT_MAX) throw invalid('amount_too_large', 'amount must be at most 100000000 paisa (PKR 1,000,000.00).', 'amount');
 
-  if (typeof b.currency !== 'string' || b.currency.toLowerCase() !== 'pkr') {
-    throw invalid('currency_not_supported', 'Only pkr is supported.', 'currency');
+  const max = CURRENCY_INFO[projectCurrency].maxAmount;
+  if (typeof b.amount !== 'number' || !Number.isInteger(b.amount)) {
+    const example = `e.g. 510000 for ${formatMoney(510000, projectCurrency)}`;
+    throw invalid('amount_not_integer', `amount must be a whole number in the smallest unit (${example}).`, 'amount');
   }
+  if (b.amount < AMOUNT_MIN) throw invalid('amount_too_small', `amount must be at least ${AMOUNT_MIN} (${formatMoney(AMOUNT_MIN, projectCurrency)}).`, 'amount');
+  if (b.amount > max) throw invalid('amount_too_large', `amount must be at most ${max} (${formatMoney(max, projectCurrency)}).`, 'amount');
 
   const items = b.line_items;
   if (!Array.isArray(items) || items.length < 1 || items.length > MAX_LINE_ITEMS || !items.every(isLineItem)) {
     throw invalid(
       'parameter_invalid',
-      `line_items must be 1 to ${MAX_LINE_ITEMS} items of { name (1-200 chars), quantity (1-1000), amount (paisa) }.`,
+      `line_items must be 1 to ${MAX_LINE_ITEMS} items of { name (1-200 chars), quantity (1-1000), amount (smallest unit) }.`,
       'line_items',
     );
   }
@@ -89,7 +100,7 @@ export function parseCreateSession(body: unknown): CreateSessionInput {
 
   return {
     amount: b.amount,
-    currency: 'pkr',
+    currency: projectCurrency,
     lineItems: items.map((i: LineItem) => ({ name: i.name.trim(), quantity: i.quantity, amount: i.amount })),
     successUrl,
     cancelUrl,

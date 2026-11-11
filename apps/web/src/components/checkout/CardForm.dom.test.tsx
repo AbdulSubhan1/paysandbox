@@ -11,7 +11,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 const renderForm = () =>
-  render(<CardForm sessionId="cs_test_1" amount={510000} merchantName="Chai Code Co." defaultEmail="" />);
+  render(<CardForm sessionId="cs_test_1" amount={510000} currency="pkr" merchantName="Chai Code Co." defaultEmail="" />);
 
 async function fillValid() {
   await userEvent.type(screen.getByLabelText('Email'), 'ayesha@example.com');

@@ -1,3 +1,4 @@
+import type { Currency } from '@/lib/currency';
 import type { Db } from '@/lib/db/client';
 import { getDb } from '@/lib/db/client';
 import { newId } from '@/lib/ids';
@@ -10,7 +11,8 @@ import { logApiRequest } from './request-log';
 import { countRequestForKey, dailyLimitError, type UsageResult } from './usage';
 
 export type ApiResponse = { status: number; body: unknown; headers?: Record<string, string> };
-export type ApiContext = { db: Db; merchantId: string; now: Date; requestId: string; idempotencyKey: string | null };
+/** currency: the project's; every checkout it creates is in it. */
+export type ApiContext = { db: Db; merchantId: string; currency: Currency; now: Date; requestId: string; idempotencyKey: string | null };
 export type ApiHandler = (ctx: ApiContext, req: Request, params: Record<string, string>) => Promise<ApiResponse>;
 export type ApiRouteContext = { params: Promise<Record<string, string>> };
 
@@ -29,7 +31,11 @@ function readKey(authorization: string | null): string | null {
  * The merchant for the secret key, with today's API request counted, in one database round trip. Throws a 401 that
  * says what was wrong; the key-shape checks need no query.
  */
-export async function authenticateAndCount(db: Db, authorization: string | null, now: Date): Promise<{ merchantId: string; usage: UsageResult }> {
+export async function authenticateAndCount(
+  db: Db,
+  authorization: string | null,
+  now: Date,
+): Promise<{ merchantId: string; currency: Currency; usage: UsageResult }> {
   const key = readKey(authorization);
   if (!key) throw invalidKey('No API key provided.');
   if (key.startsWith('pk_test_')) {
@@ -74,9 +80,11 @@ export function withApi(handler: ApiHandler, opts: { idempotent?: boolean } = {}
     const idempotencyKey = req.headers.get('idempotency-key');
 
     let merchantId: string;
+    let currency: Currency;
     try {
       const auth = await authenticateAndCount(db, req.headers.get('authorization'), now);
       merchantId = auth.merchantId;
+      currency = auth.currency;
       const usage = auth.usage;
       if (!usage.allowed) {
         const e = dailyLimitError('api_requests', usage);
@@ -87,7 +95,7 @@ export function withApi(handler: ApiHandler, opts: { idempotent?: boolean } = {}
       return toResponse({ status: err.status, body: errorBody(err), headers: err.headers }, started);
     }
 
-    const ctx: ApiContext = { db, merchantId, now, requestId: newId('req'), idempotencyKey };
+    const ctx: ApiContext = { db, merchantId, currency, now, requestId: newId('req'), idempotencyKey };
     const params = await route.params;
     // ApiErrors become responses here, so idempotency can store 4xx results; unexpected errors still throw.
     const run = async (): Promise<ApiResponse> => {

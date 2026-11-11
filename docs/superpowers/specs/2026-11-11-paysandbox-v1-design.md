@@ -31,7 +31,7 @@ It is also Abdul's portfolio piece. It should show payments depth, the things th
 
 **Non-goals (not in v1)**
 - Live mode, real money, real cards, bank connections. Ever.
-- Currencies other than PKR.
+- Currency conversion. (Since 2026-11-11 each project picks one currency, see §6a; nothing is ever converted.)
 - Embedded card fields inside the merchant's own page (iframe / Elements style). The hosted page is the only way to pay.
 - Open public sign-up (v1 is invite-only; the allowlist can be dropped later).
 - Subscriptions, saved cards, payouts, invoices, team members, multiple webhook endpoints per merchant, restricted keys.
@@ -88,13 +88,13 @@ It is also Abdul's portfolio piece. It should show payments depth, the things th
 
 ## 5. Data model (Postgres)
 
-All money is stored as **integer paisa** (`bigint`). All IDs are `prefix_` + 24 random base62 characters. Every merchant-owned table has `merchant_id`, and every query filters by it.
+All money is stored as **integers in the smallest unit** of the project's currency (`bigint`; paisa for PKR). Payments, refunds and disputes also store their `currency`. All IDs are `prefix_` + 24 random base62 characters. Every merchant-owned table has `merchant_id`, and every query filters by it.
 
 | Table | Key columns |
 |---|---|
 | `users` | `id` (`usr_`), `github_user_id`, `github_login`, `is_admin`, `created_at` |
 | `signup_allowlist` | `github_login` (primary key), `added_by`, `created_at` |
-| `merchants` | `id` (`mer_`), `owner_user_id` (null for guests), `name`, `is_guest`, `guest_expires_at`, `demo_receiver_mode` (`ok` / `fail`, guests only), `created_at`. Max 3 non-guest merchants per user. |
+| `merchants` | `id` (`mer_`), `owner_user_id` (null for guests), `name`, `currency` (§6a), `is_guest`, `guest_expires_at`, `demo_receiver_mode` (`ok` / `fail`, guests only), `created_at`. Max 3 non-guest merchants per user. |
 | `api_keys` | `id`, `merchant_id`, `type` (`publishable` / `secret`), `prefix` (`pk_test_` / `sk_test_`), `last4`, `key_hash` (SHA-256, secret keys only), `publishable_value` (publishable only), `expires_at` (set on roll: old key + 24 h), `created_at` |
 | `checkout_sessions` | `id` (`cs_test_`), `merchant_id`, `amount`, `currency` (`pkr`), `line_items` (jsonb), `customer_email` (optional prefill), `success_url`, `cancel_url`, `status` (`open` / `complete` / `expired`), `expires_at` (+24 h), `payment_id`, `idempotency_key`, `created_at` |
 | `payments` | `id` (`pay_`), `merchant_id`, `checkout_session_id`, `customer_id`, `amount`, `amount_refunded`, `status`, `card_brand`, `card_last4`, `test_card` (which catalogue entry), `failure_code`, `decline_code`, `otp_attempts`, `created_at` |
@@ -136,6 +136,14 @@ session open ──pay──▶ processing ──▶ succeeded ──refund (par
 8. **Dispute card (0259).** Payment succeeds; a QStash message 60 s later opens a dispute.
 9. **Refunds** (API or dashboard): amount ≤ amount left; allowed on `succeeded` / `partially_refunded` only; not while a dispute is open. Done in one transaction with a row lock so parallel refunds can't overspend.
 10. **Disputes** (dashboard "Simulate dispute" or card 0259): amount = amount left; respond-by = +7 days; merchant picks win (status goes back) or lose (`dispute_lost`). **If respond-by passes with no answer, the dispute is lost automatically** (Stripe behaves the same), triggered by a delayed QStash message scheduled when the dispute opens, and `dispute.closed` is sent **[my call]**. Disputes are dashboard-only in v1 (no API).
+
+## 6a. Project currency (added 2026-11-11, Abdul decided)
+
+- Each project has one currency, chosen at creation: PKR (default, and every project before this change), USD, AED, SAR, GBP or EUR. All have 2 decimals.
+- Every checkout, payment, refund, dispute, webhook payload and dashboard total of the project is in that currency. Nothing is converted.
+- `POST /checkout_sessions` may leave `currency` out (the project's is used). Another supported currency → 400 `currency_mismatch`; an unknown one → 400 `currency_not_supported`.
+- Amount per checkout: from 1.00 up to PKR 1,000,000, USD 5,000, AED 15,000, SAR 15,000, GBP 4,000 or EUR 4,500.
+- The currency can change on the projects page only while the project has no checkout sessions; after the first one it is locked, so a project's totals never mix currencies.
 
 **Events emitted:** `payment.succeeded`, `payment.failed`, `payment.requires_action`, `refund.created`, `dispute.created`, `dispute.closed`. Payload = snapshot of the object at that moment, amounts in paisa, `livemode: false`.
 

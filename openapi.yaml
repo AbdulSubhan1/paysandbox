@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: PaySandbox API
   version: 1.0.0
-  description: Test-mode-only payment gateway. No real money ever moves. Amounts are integers in paisa.
+  description: Test-mode-only payment gateway. No real money ever moves. Amounts are integers in the smallest unit of the project's currency (paisa, cents, fils).
 servers:
   - url: https://paysandbox.vercel.app/api/v1
 security:
@@ -97,13 +97,13 @@ components:
       properties:
         name: { type: string, minLength: 1, maxLength: 200 }
         quantity: { type: integer, minimum: 1, maximum: 1000 }
-        amount: { type: integer, minimum: 0, description: Paisa }
+        amount: { type: integer, minimum: 0, description: Smallest currency unit }
     CreateCheckoutSession:
       type: object
-      required: [amount, currency, line_items, success_url, cancel_url]
+      required: [amount, line_items, success_url, cancel_url]
       properties:
-        amount: { type: integer, minimum: 100, maximum: 100000000 }
-        currency: { type: string, enum: [pkr, PKR] }
+        amount: { type: integer, minimum: 100, maximum: 100000000, description: 'Smallest unit. Per-currency maximum: PKR 1,000,000, USD 5,000, AED 15,000, SAR 15,000, GBP 4,000, EUR 4,500' }
+        currency: { type: string, enum: [pkr, usd, aed, sar, gbp, eur, PKR, USD, AED, SAR, GBP, EUR], description: "Optional; must be the project's currency, which is used when left out" }
         line_items: { type: array, minItems: 1, maxItems: 20, items: { $ref: '#/components/schemas/LineItem' } }
         success_url: { type: string, format: uri }
         cancel_url: { type: string, format: uri }
@@ -117,7 +117,7 @@ components:
         object: { const: checkout_session }
         url: { type: string, format: uri }
         amount: { type: integer }
-        currency: { const: pkr }
+        currency: { type: string, enum: [pkr, usd, aed, sar, gbp, eur] }
         line_items: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
         customer_email: { type: [string, 'null'] }
         success_url: { type: string, format: uri }
@@ -132,7 +132,7 @@ components:
       required: [payment, reason]
       properties:
         payment: { type: string, description: The pay_ ID to refund }
-        amount: { type: integer, minimum: 1, description: Paisa; defaults to the amount left }
+        amount: { type: integer, minimum: 1, description: Smallest currency unit; defaults to the amount left }
         reason: { enum: [requested_by_customer, duplicate, fraudulent] }
     Refund:
       type: object
@@ -142,7 +142,7 @@ components:
         id: { type: string, pattern: '^re_[0-9A-Za-z]{24}$' }
         object: { const: refund }
         amount: { type: integer, minimum: 1 }
-        currency: { const: pkr }
+        currency: { type: string, enum: [pkr, usd, aed, sar, gbp, eur] }
         payment: { type: string }
         reason: { enum: [requested_by_customer, duplicate, fraudulent] }
         status: { const: succeeded }
@@ -174,7 +174,7 @@ components:
         object: { const: payment }
         amount: { type: integer }
         amount_refunded: { type: integer }
-        currency: { const: pkr }
+        currency: { type: string, enum: [pkr, usd, aed, sar, gbp, eur] }
         status: { enum: [requires_action, succeeded, failed, partially_refunded, refunded, disputed, dispute_lost] }
         customer:
           type: object

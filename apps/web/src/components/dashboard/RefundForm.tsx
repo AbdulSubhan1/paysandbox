@@ -5,8 +5,9 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { parsePkrInput } from '@/lib/format';
-import { formatPkr } from '@/lib/money';
+import type { Currency } from '@/lib/currency';
+import { parseAmountInput } from '@/lib/format';
+import { formatMoney } from '@/lib/money';
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -16,17 +17,17 @@ const REASONS: [string, string][] = [
   ['fraudulent', 'Fraudulent'],
 ];
 
-type Props = { amountLeft: number; onRefund: (amountText: string, reason: string) => Promise<ActionResult> };
+type Props = { currency: Currency; amountLeft: number; onRefund: (amountText: string, reason: string) => Promise<ActionResult> };
 
 /** Full or partial refund. Amount starts at what is left (and resets when that changes); the server parses it again. */
 export function RefundForm(props: Props) {
   return <Form key={props.amountLeft} {...props} />;
 }
 
-function Form({ amountLeft, onRefund }: Props) {
+function Form({ currency, amountLeft, onRefund }: Props) {
   const ids = { amount: useId(), reason: useId() };
-  const max = formatPkr(amountLeft);
-  const [amount, setAmount] = useState(max.replace(/^PKR /, ''));
+  const max = formatMoney(amountLeft, currency);
+  const [amount, setAmount] = useState(max.replace(/^[A-Z]{3} /, ''));
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -39,16 +40,16 @@ function Form({ amountLeft, onRefund }: Props) {
       onSubmit={async (e) => {
         e.preventDefault();
         if (busy.current) return;
-        const parsed = parsePkrInput(amount);
+        const parsed = parseAmountInput(amount, currency);
         if (!parsed.ok) return setError(parsed.message);
-        if (parsed.paisa > amountLeft) return setError(`At most ${max} is left to refund.`);
+        if (parsed.amount > amountLeft) return setError(`At most ${max} is left to refund.`);
         if (!reason) return setError('Choose a reason.');
         setError(null);
         busy.current = true;
         setSending(true);
         try {
           const r = await onRefund(amount, reason);
-          if (r.ok) toast.success(`Refunded ${formatPkr(parsed.paisa)}`, { description: 'A refund.created webhook is on its way.' });
+          if (r.ok) toast.success(`Refunded ${formatMoney(parsed.amount, currency)}`, { description: 'A refund.created webhook is on its way.' });
           else {
             setError(r.error);
             toast.error(r.error);

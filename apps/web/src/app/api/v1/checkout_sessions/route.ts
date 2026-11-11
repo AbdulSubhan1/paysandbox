@@ -15,7 +15,7 @@ export const POST = withApi(
     } catch {
       throw new ApiError(400, 'invalid_request_error', 'invalid_json', 'Send a JSON object with Content-Type: application/json.');
     }
-    const row = await createCheckoutSession(ctx, parseCreateSession(body));
+    const row = await createCheckoutSession(ctx, parseCreateSession(body, ctx.currency));
     flushJobsAfterResponse({ merchantId: ctx.merchantId }); // publishes the session's expiry timer
     return { status: 200, body: toSessionObject(row, ctx.now) };
   },

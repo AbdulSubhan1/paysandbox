@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import type { GuardResult } from '@/lib/card-guard/guard';
 import { parseExpiry, validateCvc, validateEmail, validateName } from '@/lib/checkout/validate';
-import { formatPkr } from '@/lib/money';
+import type { Currency } from '@/lib/currency';
+import { formatMoney } from '@/lib/money';
 import { CardNumberInput, fillInput } from './CardNumberInput';
 import { OtpDialog } from './OtpDialog';
 import { type PayResponse, PaymentResult } from './PaymentResult';
@@ -36,11 +37,13 @@ function FieldError({ id, text }: { id: string; text?: string }) {
 export function CardForm({
   sessionId,
   amount,
+  currency,
   merchantName,
   defaultEmail,
 }: {
   sessionId: string;
   amount: number;
+  currency: Currency;
   merchantName: string;
   defaultEmail: string;
 }) {
@@ -57,7 +60,7 @@ export function CardForm({
   const [busy, setBusy] = useState(false);
   const [otp, setOtp] = useState<{ paymentId: string; error: string | null } | null>(null);
   const [result, setResult] = useState<PayResponse | null>(null);
-  const amountLabel = formatPkr(amount);
+  const amountLabel = formatMoney(amount, currency);
 
   const clearError = (f: FieldName) => setErrors(({ [f]: _gone, ...rest }) => rest);
 

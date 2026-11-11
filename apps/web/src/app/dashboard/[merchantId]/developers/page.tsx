@@ -5,7 +5,9 @@ import type { UsageCounter } from '@/lib/api/usage';
 import { getUsageToday } from '@/lib/dashboard/usage';
 import { getDb } from '@/lib/db/client';
 import { describeKeys } from '@/lib/keys/keys';
+import type { Currency } from '@/lib/currency';
 import { requireProject } from '@/lib/merchants/require-project';
+import { formatMoney } from '@/lib/money';
 import { appUrl } from '@/lib/sessions/sessions';
 import { rollSecretKeyAction } from './actions';
 
@@ -18,7 +20,9 @@ const USAGE_LABELS: [UsageCounter, string][] = [
   ['test_events', 'Test events'],
 ];
 
-function snippets(base: string) {
+/** Example amount: PKR 5,100.00 for rupee projects, 29.99 otherwise (under every currency's maximum). */
+function snippets(base: string, currency: Currency) {
+  const amount = currency === 'pkr' ? 510000 : 2999;
   return [
     {
       label: 'Next.js route handler',
@@ -32,9 +36,9 @@ export async function POST() {
       'Idempotency-Key': crypto.randomUUID(),
     },
     body: JSON.stringify({
-      amount: 510000, // paisa: PKR 5,100.00
-      currency: 'pkr',
-      line_items: [{ name: 'Developer hoodie', quantity: 1, amount: 510000 }],
+      amount: ${amount}, // smallest unit: ${formatMoney(amount, currency)}
+      currency: '${currency}', // optional: your project's currency
+      line_items: [{ name: 'Developer hoodie', quantity: 1, amount: ${amount} }],
       success_url: 'https://your-app.com/thanks',
       cancel_url: 'https://your-app.com/cart',
     }),
@@ -49,7 +53,7 @@ export async function POST() {
   -H "Authorization: Bearer sk_test_…" \\
   -H "Content-Type: application/json" \\
   -H "Idempotency-Key: order_1042" \\
-  -d '{"amount":510000,"currency":"pkr","line_items":[{"name":"Hoodie","quantity":1,"amount":510000}],"success_url":"https://your-app.com/thanks","cancel_url":"https://your-app.com/cart"}'`,
+  -d '{"amount":${amount},"currency":"${currency}","line_items":[{"name":"Hoodie","quantity":1,"amount":${amount}}],"success_url":"https://your-app.com/thanks","cancel_url":"https://your-app.com/cart"}'`,
     },
     {
       label: 'Verify a webhook',
@@ -94,7 +98,7 @@ async function Developers({ params }: Props) {
         <h2 id="code" className="font-semibold">
           Integration
         </h2>
-        <CodeBlock tabs={snippets(appUrl())} />
+        <CodeBlock tabs={snippets(appUrl(), merchant.currency)} />
       </section>
       <section aria-labelledby="usage" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
         <h2 id="usage" className="font-semibold">

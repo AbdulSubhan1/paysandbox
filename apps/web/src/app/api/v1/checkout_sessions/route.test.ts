@@ -65,7 +65,8 @@ describe('POST /api/v1/checkout_sessions', () => {
     [{ amount: 100000001 }, 'amount_too_large', 'amount'],
     [{ amount: 5100.5 }, 'amount_not_integer', 'amount'],
     [{ amount: '5100' }, 'amount_not_integer', 'amount'],
-    [{ currency: 'usd' }, 'currency_not_supported', 'currency'],
+    [{ currency: 'usd' }, 'currency_mismatch', 'currency'],
+    [{ currency: 'inr' }, 'currency_not_supported', 'currency'],
     [{ success_url: 'http://evil.test/x' }, 'parameter_invalid', 'success_url'],
     [{ cancel_url: 'not a url' }, 'parameter_invalid', 'cancel_url'],
     [{ line_items: Array(21).fill(item) }, 'parameter_invalid', 'line_items'],
@@ -128,5 +129,47 @@ describe('GET /api/v1/checkout_sessions/{id}', () => {
     expect((await get(created.id)).json.status).toBe('expired');
     const [row] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, created.id));
     expect(row.status).toBe('open');
+  });
+});
+
+describe('POST /api/v1/checkout_sessions on a USD project', () => {
+  let usd: { id: string; sk: string };
+  beforeEach(async () => {
+    const user = await makeUser(db);
+    const m = await createMerchant(db, user.id, 'Dollar Shop', 'usd');
+    usd = { id: m.merchant.id, sk: m.secretKey };
+  });
+  const usdBody = { amount: 29999, line_items: [{ name: 'Car plan', quantity: 1, amount: 29999 }], success_url: valid.success_url, cancel_url: valid.cancel_url };
+
+  it("uses the project's currency when currency is left out", async () => {
+    const res = await post(usdBody, usd.sk);
+    expect(res.status).toBe(200);
+    expectMatchesSchema('CheckoutSession', res.json);
+    expect(res.json).toMatchObject({ amount: 29999, currency: 'usd' });
+  });
+
+  it('accepts the same currency in any case', async () => {
+    expect((await post({ ...usdBody, currency: 'USD' }, usd.sk)).json.currency).toBe('usd');
+  });
+
+  it("refuses another currency than the project's (currency_mismatch)", async () => {
+    const res = await post({ ...usdBody, currency: 'pkr' }, usd.sk);
+    expect(res.status).toBe(400);
+    expect(res.json.error).toMatchObject({ code: 'currency_mismatch', param: 'currency' });
+    expect(res.json.error.message).toContain('USD');
+  });
+
+  it('refuses a currency PaySandbox does not offer (currency_not_supported)', async () => {
+    const res = await post({ ...usdBody, currency: 'inr' }, usd.sk);
+    expect(res.status).toBe(400);
+    expect(res.json.error).toMatchObject({ code: 'currency_not_supported', param: 'currency' });
+  });
+
+  it('applies the USD maximum of 5,000.00', async () => {
+    expect((await post({ ...usdBody, amount: 500_000, line_items: [{ ...usdBody.line_items[0], amount: 500_000 }] }, usd.sk)).status).toBe(200);
+    const res = await post({ ...usdBody, amount: 500_001 }, usd.sk);
+    expect(res.status).toBe(400);
+    expect(res.json.error).toMatchObject({ code: 'amount_too_large', param: 'amount' });
+    expect(res.json.error.message).toContain('USD 5,000.00');
   });
 });

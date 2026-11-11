@@ -12,7 +12,7 @@ import { getPaymentDetail } from '@/lib/dashboard/payment-detail';
 import { getDb } from '@/lib/db/client';
 import { formatPkt } from '@/lib/format';
 import { requireProject } from '@/lib/merchants/require-project';
-import { formatPkr } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import { closeDisputeAction, refundPaymentAction, simulateDisputeAction } from './actions';
 
 type Props = PageProps<'/dashboard/[merchantId]/payments/[paymentId]'>;
@@ -46,7 +46,7 @@ async function Payment({ params }: Props) {
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-bold tabular-nums">{formatPkr(p.amount)}</h1>
+            <h1 className="text-3xl font-bold tabular-nums">{formatMoney(p.amount, p.currency)}</h1>
             <StatusBadge status={p.status} />
           </div>
           <IdText value={p.id} />
@@ -59,7 +59,7 @@ async function Payment({ params }: Props) {
       )}
       {canRefund && (
         <Panel title="Refund this payment">
-          <RefundForm amountLeft={d.amountLeft} onRefund={refundPaymentAction.bind(null, merchantId, p.id)} />
+          <RefundForm currency={p.currency} amountLeft={d.amountLeft} onRefund={refundPaymentAction.bind(null, merchantId, p.id)} />
         </Panel>
       )}
 
@@ -112,7 +112,7 @@ async function Payment({ params }: Props) {
               )}
               <dt className="text-muted-foreground">Refunded</dt>
               <dd className="tabular-nums">
-                {formatPkr(p.amountRefunded)} of {formatPkr(p.amount)}
+                {formatMoney(p.amountRefunded, p.currency)} of {formatMoney(p.amount, p.currency)}
               </dd>
               <dt className="text-muted-foreground">Created</dt>
               <dd>{formatPkt(p.createdAt)}</dd>
@@ -125,7 +125,7 @@ async function Payment({ params }: Props) {
               <ul className="divide-y divide-border text-sm">
                 {d.refunds.map((r) => (
                   <li key={r.id} className="flex items-center justify-between gap-3 py-2">
-                    <span className="font-semibold tabular-nums">{formatPkr(r.amount)}</span>
+                    <span className="font-semibold tabular-nums">{formatMoney(r.amount, p.currency)}</span>
                     <span className="text-muted-foreground">{r.reason.replaceAll('_', ' ')}</span>
                     <span className="text-xs text-muted-foreground">{formatPkt(r.createdAt)}</span>
                   </li>

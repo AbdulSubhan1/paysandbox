@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { formatPkr } from './money';
+import { formatMoney } from './money';
 
-describe('formatPkr', () => {
-  it('formats paisa as rupees with two decimals', () => {
-    expect(formatPkr(510000)).toBe('PKR 5,100.00');
-    expect(formatPkr(100)).toBe('PKR 1.00');
-    expect(formatPkr(100000000)).toBe('PKR 1,000,000.00');
-    expect(formatPkr(5)).toBe('PKR 0.05');
+describe('formatMoney', () => {
+  it('formats the smallest unit with the currency code and two decimals', () => {
+    expect(formatMoney(510000, 'pkr')).toBe('PKR 5,100.00');
+    expect(formatMoney(100, 'pkr')).toBe('PKR 1.00');
+    expect(formatMoney(100000000, 'pkr')).toBe('PKR 1,000,000.00');
+    expect(formatMoney(5, 'pkr')).toBe('PKR 0.05');
+    expect(formatMoney(29999, 'usd')).toBe('USD 299.99');
+    expect(formatMoney(1_500_000, 'aed')).toBe('AED 15,000.00');
   });
 
-  it('rejects non-integer paisa', () => {
-    expect(() => formatPkr(1.5)).toThrow();
+  it('rejects a fractional amount', () => {
+    expect(() => formatMoney(1.5, 'usd')).toThrow();
   });
 });

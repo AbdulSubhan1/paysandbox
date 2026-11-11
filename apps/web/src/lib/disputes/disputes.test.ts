@@ -130,3 +130,14 @@ describe('disputes', () => {
   });
 });
 
+
+describe('dispute currency', () => {
+  it("opens in the payment's currency", async () => {
+    const m = (await makeMerchant(db, { currency: 'gbp' })).id;
+    const p = (await makePayment(db, m, { currency: 'gbp', amount: 12000 })).id;
+    const d = await openDispute(db, { merchantId: m, paymentId: p, reason: 'fraudulent', now: new Date() });
+    expect(d.currency).toBe('gbp');
+    const [e] = await db.select().from(events).where(eq(events.type, 'dispute.created'));
+    expect(e.payload).toMatchObject({ currency: 'gbp', amount: 12000 });
+  });
+});

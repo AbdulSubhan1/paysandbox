@@ -133,3 +133,15 @@ describe('payCheckoutSession and the session', () => {
     await expect(pay({ sessionId: 'cs_test_nope' })).rejects.toMatchObject({ code: 'session_not_found' });
   });
 });
+
+describe('currency', () => {
+  it("records the payment in the checkout's currency and sends it in the event", async () => {
+    const m = await makeMerchant(db, { currency: 'usd' });
+    sessionId = (await makeSession(db, m.id, { currency: 'usd', amount: 29999, expiresAt: addHours(now, 24), createdAt: now })).id;
+    await pay();
+    const [p] = await db.select().from(payments).where(eq(payments.checkoutSessionId, sessionId));
+    expect(p.currency).toBe('usd');
+    const [e] = await db.select().from(events).where(eq(events.type, 'payment.succeeded'));
+    expect(e.payload).toMatchObject({ amount: 29999, currency: 'usd' });
+  });
+});

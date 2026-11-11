@@ -45,4 +45,12 @@ describe('sendTestEvent (PS-WH-010)', () => {
     expect(await sendTestEvent(db, merchantId, 'payment.succeeded', now)).toEqual({ ok: false, reason: 'daily_limit' });
     expect(await db.select().from(events)).toHaveLength(0);
   });
+
+  it("uses the project's currency in the sample object", async () => {
+    const usd = (await makeMerchant(db, { currency: 'usd' })).id;
+    await makeEndpoint(db, usd);
+    await sendTestEvent(db, usd, 'refund.created', now);
+    const [evt] = await db.select().from(events);
+    expect(evt.payload).toMatchObject({ currency: 'usd', amount: 2999 });
+  });
 });

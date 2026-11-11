@@ -5,7 +5,7 @@ import type { Db } from '@/lib/db/client';
 import { payments, refunds } from '@/lib/db/schema';
 import { recordEvent } from '@/lib/events/record';
 import { newId } from '@/lib/ids';
-import { formatPkr } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import type { PaymentRow } from '@/lib/payments/objects';
 import { assertTransition } from '@/lib/payments/state';
 
@@ -20,7 +20,7 @@ export function toRefundObject(row: RefundRow) {
     id: row.id,
     object: 'refund' as const,
     amount: row.amount,
-    currency: 'pkr' as const,
+    currency: row.currency,
     payment: row.paymentId,
     reason: row.reason,
     status: row.status,
@@ -48,13 +48,13 @@ export async function createRefund(
 
     const left = payment.amount - payment.amountRefunded;
     const amount = r.amount ?? left;
-    if (amount > left) throw invalid('amount_too_large', `Only ${formatPkr(left)} is left to refund.`, 'amount');
+    if (amount > left) throw invalid('amount_too_large', `Only ${formatMoney(left, payment.currency)} is left to refund.`, 'amount');
     const status = amount === left ? 'refunded' : 'partially_refunded';
     assertTransition(payment.status, status);
 
     const [refund] = await tx
       .insert(refunds)
-      .values({ id: newId('re'), merchantId: r.merchantId, paymentId: payment.id, amount, reason: r.reason, createdAt: r.now })
+      .values({ id: newId('re'), merchantId: r.merchantId, paymentId: payment.id, amount, currency: payment.currency, reason: r.reason, createdAt: r.now })
       .returning();
     const [updated] = await tx
       .update(payments)
@@ -63,7 +63,7 @@ export async function createRefund(
       .returning();
     await addActivity(
       tx,
-      [{ checkoutSessionId: payment.checkoutSessionId, paymentId: payment.id, kind: 'refunded', message: `Refunded ${formatPkr(amount)}`, detail: { refund: refund.id, reason: r.reason } }],
+      [{ checkoutSessionId: payment.checkoutSessionId, paymentId: payment.id, kind: 'refunded', message: `Refunded ${formatMoney(amount, payment.currency)}`, detail: { refund: refund.id, reason: r.reason } }],
       r.now,
     );
     await recordEvent(tx, { merchantId: r.merchantId, type: 'refund.created', payload: toRefundObject(refund), now: r.now });

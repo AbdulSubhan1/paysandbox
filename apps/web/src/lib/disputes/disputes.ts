@@ -5,7 +5,7 @@ import { disputes, payments } from '@/lib/db/schema';
 import { recordEvent } from '@/lib/events/record';
 import { newId } from '@/lib/ids';
 import { enqueueJob, type JobHandler } from '@/lib/jobs/jobs';
-import { formatPkr } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import { assertTransition } from '@/lib/payments/state';
 
 export const DISPUTE_RESPOND_DAYS = 7;
@@ -27,7 +27,7 @@ export function toDisputeObject(row: DisputeRow) {
     id: row.id,
     object: 'dispute' as const,
     amount: row.amount,
-    currency: 'pkr' as const,
+    currency: row.currency,
     payment: row.paymentId,
     reason: row.reason,
     status: row.status,
@@ -57,12 +57,12 @@ export async function openDispute(db: Db, d: { merchantId: string; paymentId: st
     const respondBy = new Date(d.now.getTime() + DISPUTE_RESPOND_DAYS * 86_400_000);
     const [dispute] = await tx
       .insert(disputes)
-      .values({ id: newId('dp'), merchantId: d.merchantId, paymentId: payment.id, amount, reason: d.reason, previousPaymentStatus: payment.status, respondBy, createdAt: d.now })
+      .values({ id: newId('dp'), merchantId: d.merchantId, paymentId: payment.id, amount, currency: payment.currency, reason: d.reason, previousPaymentStatus: payment.status, respondBy, createdAt: d.now })
       .returning();
     await tx.update(payments).set({ status: 'disputed', updatedAt: d.now }).where(eq(payments.id, payment.id));
     await addActivity(
       tx,
-      [{ checkoutSessionId: payment.checkoutSessionId, paymentId: payment.id, kind: 'dispute_opened', message: `Disputed: ${formatPkr(amount)} on hold`, detail: { dispute: dispute.id, reason: d.reason } }],
+      [{ checkoutSessionId: payment.checkoutSessionId, paymentId: payment.id, kind: 'dispute_opened', message: `Disputed: ${formatMoney(amount, payment.currency)} on hold`, detail: { dispute: dispute.id, reason: d.reason } }],
       d.now,
     );
     await recordEvent(tx, { merchantId: d.merchantId, type: 'dispute.created', payload: toDisputeObject(dispute), now: d.now });

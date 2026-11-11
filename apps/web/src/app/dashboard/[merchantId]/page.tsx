@@ -9,7 +9,7 @@ import { getOverview } from '@/lib/dashboard/overview';
 import { getDb } from '@/lib/db/client';
 import { formatPkt } from '@/lib/format';
 import { requireProject } from '@/lib/merchants/require-project';
-import { formatPkr } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import type { PaymentStatus } from '@/lib/payments/state';
 
 const ORDER: PaymentStatus[] = ['succeeded', 'partially_refunded', 'refunded', 'failed', 'requires_action', 'disputed', 'dispute_lost'];
@@ -37,12 +37,12 @@ async function Overview({ params }: { params: PageProps<'/dashboard/[merchantId]
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <StatCard label="Net volume" value={formatPkr(o.netVolume)} caption="after refunds and lost disputes" href={`${base}/payments`} dot="bg-foreground" />
-            <StatCard label="Succeeded" value={formatPkr(o.succeeded.amount)} caption={plural(o.succeeded.count, 'payment')} href={`${base}/payments?status=succeeded`} dot="bg-success" />
-            <StatCard label="Refunded" value={formatPkr(o.refunded.amount)} caption={`${plural(o.refunded.count, 'payment')}, incl. partial`} href={`${base}/payments?status=refunded`} dot="bg-muted-foreground" />
-            <StatCard label="Failed" value={formatPkr(o.failed.amount)} caption={plural(o.failed.count, 'payment')} href={`${base}/payments?status=failed`} dot="bg-destructive" />
-            <StatCard label="Needs OTP" value={formatPkr(o.needsOtp.amount)} caption={`${o.needsOtp.count} waiting`} href={`${base}/payments?status=requires_action`} dot="bg-warning" />
-            <StatCard label="Disputed" value={formatPkr(o.disputed.amount)} caption={plural(o.disputed.count, 'dispute')} href={`${base}/disputes`} dot="bg-violet" />
+            <StatCard label="Net volume" value={formatMoney(o.netVolume, merchant.currency)} caption="after refunds and lost disputes" href={`${base}/payments`} dot="bg-foreground" />
+            <StatCard label="Succeeded" value={formatMoney(o.succeeded.amount, merchant.currency)} caption={plural(o.succeeded.count, 'payment')} href={`${base}/payments?status=succeeded`} dot="bg-success" />
+            <StatCard label="Refunded" value={formatMoney(o.refunded.amount, merchant.currency)} caption={`${plural(o.refunded.count, 'payment')}, incl. partial`} href={`${base}/payments?status=refunded`} dot="bg-muted-foreground" />
+            <StatCard label="Failed" value={formatMoney(o.failed.amount, merchant.currency)} caption={plural(o.failed.count, 'payment')} href={`${base}/payments?status=failed`} dot="bg-destructive" />
+            <StatCard label="Needs OTP" value={formatMoney(o.needsOtp.amount, merchant.currency)} caption={`${o.needsOtp.count} waiting`} href={`${base}/payments?status=requires_action`} dot="bg-warning" />
+            <StatCard label="Disputed" value={formatMoney(o.disputed.amount, merchant.currency)} caption={plural(o.disputed.count, 'dispute')} href={`${base}/disputes`} dot="bg-violet" />
           </div>
 
           <section aria-labelledby="by-status" className="rounded-xl border border-border bg-card p-4">
@@ -74,7 +74,7 @@ async function Overview({ params }: { params: PageProps<'/dashboard/[merchantId]
                   All payments
                 </Link>
               </div>
-              <PaymentsTable merchantId={merchantId} rows={o.recentPayments} />
+              <PaymentsTable merchantId={merchantId} currency={merchant.currency} rows={o.recentPayments} />
             </section>
             <section aria-labelledby="recent-webhooks" className="flex flex-col gap-3">
               <div className="flex items-center justify-between">

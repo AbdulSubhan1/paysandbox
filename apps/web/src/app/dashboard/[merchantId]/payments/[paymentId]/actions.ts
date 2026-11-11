@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { ApiError } from '@/lib/api/errors';
 import { getDb } from '@/lib/db/client';
 import { closeDispute, DisputeError, openDispute } from '@/lib/disputes/disputes';
-import { parsePkrInput } from '@/lib/format';
+import { parseAmountInput } from '@/lib/format';
 import { flushJobsAfterResponse } from '@/lib/jobs/flush';
 import { requireProject } from '@/lib/merchants/require-project';
 import { createRefund, REFUND_REASONS, type RefundReason } from '@/lib/refunds/refunds';
@@ -18,12 +18,12 @@ const done = (merchantId: string, paymentId: string): Result => {
 };
 
 export async function refundPaymentAction(merchantId: string, paymentId: string, amountText: string, reason: string): Promise<Result> {
-  await requireProject(merchantId);
-  const amount = parsePkrInput(amountText);
+  const { merchant } = await requireProject(merchantId);
+  const amount = parseAmountInput(amountText, merchant.currency);
   if (!amount.ok) return { ok: false, error: amount.message };
   if (!REFUND_REASONS.includes(reason as RefundReason)) return { ok: false, error: 'Choose a reason.' };
   try {
-    await createRefund(getDb(), { merchantId, paymentId, amount: amount.paisa, reason: reason as RefundReason, now: new Date() });
+    await createRefund(getDb(), { merchantId, paymentId, amount: amount.amount, reason: reason as RefundReason, now: new Date() });
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };
     throw e;

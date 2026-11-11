@@ -100,3 +100,15 @@ describe('parseCreateRefund (PS-RF-005)', () => {
     expect(parseCreateRefund({ payment: 'pay_1', reason: 'fraudulent' })).toEqual({ payment: 'pay_1', reason: 'fraudulent' });
   });
 });
+
+describe('currency', () => {
+  it("refunds in the payment's currency and words the limit in it", async () => {
+    const m = (await makeMerchant(db, { currency: 'aed' })).id;
+    const p = (await makePayment(db, m, { currency: 'aed', amount: 150000 })).id;
+    const { refund: r } = await createRefund(db, { merchantId: m, paymentId: p, amount: 50000, reason: 'requested_by_customer', now });
+    expect(r.currency).toBe('aed');
+    const [e] = await db.select().from(events).where(eq(events.type, 'refund.created'));
+    expect(e.payload).toMatchObject({ currency: 'aed', amount: 50000 });
+    await expect(createRefund(db, { merchantId: m, paymentId: p, amount: 200000, reason: 'requested_by_customer', now })).rejects.toThrow('AED 1,000.00');
+  });
+});

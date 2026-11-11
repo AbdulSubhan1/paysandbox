@@ -1,7 +1,10 @@
+import { CURRENCIES } from '@/lib/currency';
 import { bigint, boolean, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique } from 'drizzle-orm/pg-core';
 
 const createdAt = () => timestamp({ withTimezone: true }).notNull().defaultNow();
 const money = () => bigint({ mode: 'number' });
+/** One of CURRENCIES; existing rows were all PKR. */
+const currency = () => text({ enum: CURRENCIES }).notNull().default('pkr');
 
 // ---- Better Auth (plural model names, see auth.ts) ----
 
@@ -66,6 +69,7 @@ export const merchants = pgTable('merchants', {
   id: text().primaryKey(),
   ownerUserId: text().references(() => users.id, { onDelete: 'cascade' }), // null for guest sandboxes
   name: text().notNull(),
+  currency: currency(), // every checkout, payment, refund and dispute of the project is in it
   isGuest: boolean().notNull().default(false),
   guestExpiresAt: timestamp({ withTimezone: true }),
   demoReceiverMode: text(),
@@ -96,7 +100,7 @@ export const checkoutSessions = pgTable(
     id: text().primaryKey(),
     merchantId: text().notNull().references(() => merchants.id, { onDelete: 'cascade' }),
     amount: money().notNull(),
-    currency: text().notNull().default('pkr'),
+    currency: currency(),
     lineItems: jsonb().$type<LineItem[]>().notNull(),
     customerEmail: text(),
     successUrl: text().notNull(),
@@ -142,6 +146,7 @@ export const payments = pgTable(
     attemptId: text().notNull(),
     amount: money().notNull(),
     amountRefunded: money().notNull().default(0),
+    currency: currency(),
     status: paymentStatus().notNull(),
     cardBrand: text().notNull(),
     cardLast4: text().notNull(),
@@ -290,6 +295,7 @@ export const refunds = pgTable(
     merchantId: text().notNull().references(() => merchants.id, { onDelete: 'cascade' }),
     paymentId: text().notNull().references(() => payments.id, { onDelete: 'cascade' }),
     amount: money().notNull(),
+    currency: currency(),
     reason: text({ enum: ['requested_by_customer', 'duplicate', 'fraudulent'] }).notNull(),
     status: text({ enum: ['succeeded'] }).notNull().default('succeeded'),
     createdAt: createdAt(),
@@ -307,6 +313,7 @@ export const disputes = pgTable('disputes', {
     .unique() // one dispute per payment, ever
     .references(() => payments.id, { onDelete: 'cascade' }),
   amount: money().notNull(),
+  currency: currency(),
   reason: text().notNull(),
   status: disputeStatus().notNull().default('needs_response'),
   previousPaymentStatus: paymentStatus().notNull(), // restored when the dispute is won
