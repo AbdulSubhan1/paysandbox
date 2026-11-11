@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { decryptSecret, encryptSecret } from './secretbox';
 
-const flipLastChar = (box: string) => box.slice(0, -1) + (box.endsWith('A') ? 'B' : 'A');
+/** Flips one bit of the ciphertext itself (editing a base64 character can change only padding bits). */
+const tamper = (box: string) => {
+  const parts = box.split('.');
+  const ct = Buffer.from(parts[3], 'base64url');
+  ct[0] ^= 1;
+  return [...parts.slice(0, 3), ct.toString('base64url')].join('.');
+};
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -16,7 +22,7 @@ describe('secretbox', () => {
   });
 
   it('refuses a tampered box', () => {
-    expect(() => decryptSecret(flipLastChar(encryptSecret('x')))).toThrow();
+    expect(() => decryptSecret(tamper(encryptSecret('x')))).toThrow();
   });
 
   it('needs a 32-byte WEBHOOK_SECRET_KEY', () => {
