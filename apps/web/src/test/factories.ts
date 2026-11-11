@@ -1,5 +1,5 @@
 import type { Db } from '@/lib/db/client';
-import { checkoutSessions, merchants, users } from '@/lib/db/schema';
+import { checkoutSessions, customers, merchants, payments, users } from '@/lib/db/schema';
 import { newId } from '@/lib/ids';
 import { addHours } from '@/lib/time';
 
@@ -32,6 +32,34 @@ export async function makeSession(db: Db, merchantId: string, overrides: Partial
       successUrl: 'https://my-store.test/thanks',
       cancelUrl: 'https://my-store.test/cart',
       expiresAt: addHours(now, 24),
+      ...overrides,
+    })
+    .returning();
+  return row;
+}
+
+/** A payment on its own session and customer; succeeded with the 4242 card unless overridden. */
+export async function makePayment(db: Db, merchantId: string, overrides: Partial<typeof payments.$inferInsert> = {}) {
+  const session = overrides.checkoutSessionId ? null : await makeSession(db, merchantId);
+  let customerId = overrides.customerId;
+  if (!customerId) {
+    const id = newId('cus');
+    await db.insert(customers).values({ id, merchantId, email: `${id.toLowerCase()}@example.com`, name: 'Ayesha Khan' });
+    customerId = id;
+  }
+  const [row] = await db
+    .insert(payments)
+    .values({
+      id: newId('pay'),
+      merchantId,
+      checkoutSessionId: session?.id ?? overrides.checkoutSessionId!,
+      customerId,
+      attemptId: newId('req'),
+      amount: 510000,
+      status: 'succeeded',
+      cardBrand: 'visa',
+      cardLast4: '4242',
+      testCard: 'visa_success',
       ...overrides,
     })
     .returning();

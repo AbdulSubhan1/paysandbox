@@ -34,6 +34,7 @@ export default defineConfig({
         APP_URL: E2E_BASE_URL,
         BETTER_AUTH_URL: E2E_BASE_URL,
         BETTER_AUTH_SECRET: 'e2e-only-secret-not-used-anywhere-else-0000',
+        WEBHOOK_SECRET_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', // 32 zero bytes: tests only
       },
     },
   ],

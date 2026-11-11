@@ -2,7 +2,7 @@ const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 // Largest multiple of 62 below 256: bytes at or above it are dropped so every character is equally likely.
 const LIMIT = 248;
 
-export type IdPrefix = 'usr' | 'mer' | 'key' | 'cs_test' | 'pay' | 'cus' | 'evt' | 'act' | 'req';
+export type IdPrefix = 'usr' | 'mer' | 'key' | 'cs_test' | 'pay' | 'cus' | 'evt' | 'act' | 'req' | 'we' | 'dlv' | 'att' | 're' | 'dp' | 'job';
 
 export function randomBase62(length: number): string {
   let out = '';

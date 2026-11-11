@@ -41,6 +41,7 @@ jobs:
       APP_URL: http://localhost:3090
       BETTER_AUTH_URL: http://localhost:3090
       BETTER_AUTH_SECRET: e2e-only-secret-not-used-anywhere-else-0000
+      WEBHOOK_SECRET_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' # 32 zero bytes: tests only
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
