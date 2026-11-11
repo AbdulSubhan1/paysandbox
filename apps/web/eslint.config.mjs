@@ -12,7 +12,17 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated reports
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
+  {
+    rules: {
+      // `_name` marks a value that is deliberately unused (e.g. dropping a key with rest syntax).
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_" }],
+    },
+  },
 ]);
 
 export default eslintConfig;
