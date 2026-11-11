@@ -73,13 +73,17 @@ describe('jobs outbox', () => {
     expect(order).toEqual(['a', 'b', 'other']);
   });
 
-  it('publishes only future, unpublished jobs, once', async () => {
+  it('publishes every unpublished pending job once, due ones included', async () => {
+    // A job run by QStash can create a follow-up that is due at once (e.g. the dispute.created delivery after the
+    // 0259 dispute opens). Publishing it lets QStash call straight back instead of waiting for the daily cron.
     const published: string[] = [];
     const scheduler: Scheduler = { publish: async (j) => void published.push(j.id) };
+    const due = await enqueueJob(db, { merchantId, kind: 'deliver_webhook', refId: 'dlv_1', runAt: now, now });
     const future = await enqueueJob(db, { merchantId, kind: 'dispute_deadline', refId: 'dp_1', runAt: plus(3600), now });
-    await enqueueJob(db, { merchantId, kind: 'deliver_webhook', refId: 'dlv_1', runAt: now, now });
-    expect(await publishPendingJobs(db, scheduler, now)).toBe(1);
-    expect(published).toEqual([future]);
+    const finished = await enqueueJob(db, { merchantId, kind: 'deliver_webhook', refId: 'dlv_2', runAt: now, now });
+    await runJob(db, finished, now, handlersWith({}));
+    expect(await publishPendingJobs(db, scheduler, now)).toBe(2);
+    expect(published.sort()).toEqual([due, future].sort());
     expect(await publishPendingJobs(db, scheduler, now)).toBe(0);
     expect((await job(future)).publishedAt).toEqual(now);
   });

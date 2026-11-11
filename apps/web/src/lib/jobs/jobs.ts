@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import type { Db } from '@/lib/db/client';
 import { jobs } from '@/lib/db/schema';
 import { newId } from '@/lib/ids';
@@ -72,12 +72,15 @@ export async function runDueJobs(
   return ran;
 }
 
-/** Hands future jobs to the scheduler (QStash). A failed publish leaves the job for the daily cron. */
+/**
+ * Hands every unpublished pending job to the scheduler (QStash). Due ones are included: a job run by QStash can create
+ * a follow-up that is due at once, and QStash then calls straight back. A failed publish leaves the job for the daily cron.
+ */
 export async function publishPendingJobs(db: Db, scheduler: Scheduler, now: Date): Promise<number> {
   const pending = await db
     .select({ id: jobs.id, runAt: jobs.runAt })
     .from(jobs)
-    .where(and(eq(jobs.state, 'pending'), isNull(jobs.publishedAt), gt(jobs.runAt, now)))
+    .where(and(eq(jobs.state, 'pending'), isNull(jobs.publishedAt)))
     .orderBy(asc(jobs.runAt))
     .limit(100);
   let published = 0;

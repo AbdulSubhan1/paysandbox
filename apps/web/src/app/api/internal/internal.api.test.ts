@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Db, setDbForTests } from '@/lib/db/client';
-import { jobs } from '@/lib/db/schema';
+import { jobs, webhookAttempts } from '@/lib/db/schema';
 import { enqueueJob } from '@/lib/jobs/jobs';
 import { createTestDb } from '@/test/db';
-import { makeMerchant } from '@/test/factories';
+import { makeEndpoint, makeMerchant, makePayment } from '@/test/factories';
 
 const verifyQstashSignature = vi.fn(async (sig: string | null) => sig === 'good');
 vi.mock('@/lib/jobs/scheduler', () => ({ verifyQstashSignature, getScheduler: () => ({ publish: async () => {} }) }));
@@ -78,6 +78,17 @@ describe('POST /api/internal/e2e/run-jobs', () => {
   it('does not exist outside E2E mode', async () => {
     vi.stubEnv('E2E_AUTH_BYPASS', '');
     await expect(call(0)).rejects.toThrow(); // notFound()
+  });
+
+  it('keeps running until follow-up jobs created on the way are done, like QStash calling back', async () => {
+    vi.stubEnv('E2E_AUTH_BYPASS', '1');
+    vi.stubEnv('VERCEL', '');
+    await makeEndpoint(db, merchantId, { url: 'http://127.0.0.1:1/hook' }); // closed port: the attempt fails fast
+    const pay = await makePayment(db, merchantId, { testCard: 'dispute' });
+    await enqueueJob(db, { merchantId, kind: 'open_dispute', refId: pay.id, runAt: new Date(Date.now() + 60_000), now: new Date() });
+    const res = await call(61);
+    expect((await res.json()).ran).toBe(2); // the dispute, then its dispute.created delivery
+    expect(await db.select().from(webhookAttempts)).toHaveLength(1);
   });
 
   it('runs jobs as if the clock were ahead', async () => {

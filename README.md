@@ -32,6 +32,28 @@ curl -X POST http://localhost:3000/api/v1/checkout_sessions \
   -d '{"amount":510000,"currency":"pkr","line_items":[{"name":"Hoodie","quantity":1,"amount":510000}],"success_url":"http://localhost:3000/","cancel_url":"http://localhost:3000/"}'
 ```
 
+## Webhooks
+
+Each project has one webhook endpoint (Projects page). Every event is sent as a signed [Standard Webhooks](https://www.standardwebhooks.com/) POST:
+
+- Headers `webhook-id` (the event ID, the same on every retry), `webhook-timestamp` and `webhook-signature`. Verify them with the official `standardwebhooks` library and your `whsec_…` secret.
+- Delivery is at least once and order is not guaranteed: **de-duplicate on `webhook-id`**.
+- A failed delivery is retried after 1 min, 5 min, 30 min, 2 h and 6 h. After 20 failed events in a row the endpoint is disabled until you re-enable it.
+- Endpoints must be public `https` URLs. Our servers can't reach your `localhost`, so for local development use a tunnel such as ngrok.
+
+```ts
+import { Webhook } from 'standardwebhooks';
+
+export async function POST(req: Request) {
+  const body = await req.text();
+  const event = new Webhook(process.env.PAYSANDBOX_WEBHOOK_SECRET!).verify(body, Object.fromEntries(req.headers)); // throws if forged or stale
+  // handle event.type: payment.succeeded, payment.failed, payment.requires_action, refund.created, dispute.created, dispute.closed
+  return new Response('ok');
+}
+```
+
+Timers and retries run through [Upstash QStash](https://upstash.com/docs/qstash) in production (`QSTASH_*` env vars). Without them, due work runs right after each request and from the daily cron.
+
 ## Tests
 
 | Command | What |

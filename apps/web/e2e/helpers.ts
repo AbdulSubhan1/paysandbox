@@ -1,6 +1,14 @@
 import AxeBuilder from '@axe-core/playwright';
 import { type APIRequestContext, expect, type Page } from '@playwright/test';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+import type { Db } from '../src/lib/db/client';
+import * as schema from '../src/lib/db/schema';
+import { createMerchant } from '../src/lib/merchants/merchants';
+import { revealWebhookSecret, setWebhookEndpoint } from '../src/lib/webhooks/endpoints';
 import { E2E } from '../src/test/seed-e2e';
+import { makeUser } from '../src/test/factories';
+import { E2E_DATABASE_URL } from './env';
 
 export const sessionBody = {
   amount: 510000,
@@ -41,4 +49,46 @@ export async function expectNoSeriousA11yIssues(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
   const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+}
+
+async function withDb<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+  const pool = new Pool({ connectionString: E2E_DATABASE_URL, max: 1 });
+  try {
+    return await fn(drizzle({ client: pool, schema, casing: 'snake_case' }) as unknown as Db);
+  } finally {
+    await pool.end();
+  }
+}
+
+/** A fresh merchant per test, so parallel tests (desktop and mobile) never share a webhook endpoint. */
+export async function newMerchant(): Promise<{ id: string; sk: string }> {
+  return withDb(async (db) => {
+    const user = await makeUser(db);
+    const { merchant, secretKey } = await createMerchant(db, user.id, 'Webhook Shop');
+    return { id: merchant.id, sk: secretKey };
+  });
+}
+
+/** Points the merchant's endpoint at a local receiver (allowed in E2E mode) and returns its signing secret. */
+export async function setEndpointFor(merchantId: string, url: string): Promise<string> {
+  return withDb(async (db) => {
+    await setWebhookEndpoint(db, merchantId, url, new Date(), { resolve: async () => [], allowPrivate: true });
+    return revealWebhookSecret(db, merchantId);
+  });
+}
+
+/** Runs due jobs on the server as if the clock were `advanceSeconds` ahead (retries, timers). */
+export async function runJobs(request: APIRequestContext, advanceSeconds: number): Promise<number> {
+  const res = await request.post('/api/internal/e2e/run-jobs', { data: { advanceSeconds } });
+  expect(res.status()).toBe(200);
+  return (await res.json()).ran;
+}
+
+/** Pays a checkout the way the browser does, without the browser. */
+export async function payViaApi(request: APIRequestContext, sessionId: string, card: string): Promise<{ status: string; payment_id: string }> {
+  const res = await request.post(`/c/${sessionId}/pay`, {
+    data: { attempt_id: `e2e-${Date.now()}`, email: 'ayesha@example.com', name: 'Ayesha Khan', card_number: card, expiry: '12/29' },
+  });
+  expect(res.status()).toBe(200);
+  return res.json();
 }
