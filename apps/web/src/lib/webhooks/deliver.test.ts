@@ -94,8 +94,8 @@ describe('attemptDelivery', () => {
 
   it('makes 6 attempts on the published schedule, then fails the delivery (PS-WH-007)', async () => {
     const srv = await startServer(status([500]));
-    const { deliveryId, endpoint } = await eventFor(srv.url);
     let at = new Date('2026-11-11T10:00:00Z');
+    const { deliveryId, endpoint } = await eventFor(srv.url, at); // recorded at the schedule's start
     const times: number[] = [];
     for (;;) {
       times.push(at.getTime());

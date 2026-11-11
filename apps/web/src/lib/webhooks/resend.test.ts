@@ -64,4 +64,21 @@ describe('resendEvent (PS-WH-009)', () => {
     const other = (await makeMerchant(db)).id;
     expect(await resendEvent(db, other, eventId, now)).toEqual({ ok: false, reason: 'no_delivery' });
   });
+
+  it('refuses while the first attempt is still on its way, so it never sends twice (final review)', async () => {
+    await makeEndpoint(db, m, { url });
+    const now = new Date();
+    const eventId = await recordEvent(db, { merchantId: m, type: 'payment.succeeded', payload: {}, now });
+    expect(await resendEvent(db, m, eventId, now)).toEqual({ ok: false, reason: 'in_progress' });
+  });
+
+  it('an attempt that runs before its scheduled time does nothing (no skipped back-off)', async () => {
+    await makeEndpoint(db, m, { url });
+    const now = new Date();
+    const eventId = await recordEvent(db, { merchantId: m, type: 'payment.succeeded', payload: {}, now });
+    const d = await delivery(eventId);
+    await db.update(webhookDeliveries).set({ nextAttemptAt: new Date(now.getTime() + 60_000) }).where(eq(webhookDeliveries.id, d.id));
+    expect(await attemptDelivery(db, d.id, now, deps)).toEqual({ done: true });
+    expect(ids).toEqual([]);
+  });
 });

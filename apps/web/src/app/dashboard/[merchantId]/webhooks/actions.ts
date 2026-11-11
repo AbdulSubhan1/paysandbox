@@ -72,7 +72,7 @@ export async function sendTestEventAction(merchantId: string, type: string): Pro
 const RESEND_ERRORS = {
   no_delivery: 'This event was recorded before a webhook endpoint was saved, so there is nothing to resend.',
   endpoint_disabled: 'The endpoint is disabled. Re-enable it first.',
-  in_progress: 'A retry is already scheduled for this event.',
+  in_progress: 'An attempt is already on its way or scheduled for this event.',
 } as const;
 
 export async function resendEventAction(merchantId: string, eventId: string): Promise<ActionResult> {

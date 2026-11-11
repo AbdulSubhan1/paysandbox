@@ -71,6 +71,8 @@ async function send(url: string, headers: Record<string, string>, body: string, 
 export async function attemptDelivery(db: Db, deliveryId: string, now: Date, deps: DeliveryDeps): Promise<JobOutcome> {
   const [delivery] = await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.id, deliveryId));
   if (!delivery || delivery.state !== 'pending') return { done: true };
+  // A stray job that fires before the scheduled attempt must not jump the back-off (the scheduled job will run it).
+  if (delivery.nextAttemptAt && delivery.nextAttemptAt > now) return { done: true };
   const [endpoint] = await db.select().from(webhookEndpoints).where(eq(webhookEndpoints.id, delivery.endpointId));
   if (!endpoint?.enabled) {
     await db

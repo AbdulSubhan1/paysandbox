@@ -16,8 +16,14 @@ const REASONS: [string, string][] = [
   ['fraudulent', 'Fraudulent'],
 ];
 
-/** Full or partial refund. Amount starts at what is left; the server parses it again. */
-export function RefundForm({ amountLeft, onRefund }: { amountLeft: number; onRefund: (amountText: string, reason: string) => Promise<ActionResult> }) {
+type Props = { amountLeft: number; onRefund: (amountText: string, reason: string) => Promise<ActionResult> };
+
+/** Full or partial refund. Amount starts at what is left (and resets when that changes); the server parses it again. */
+export function RefundForm(props: Props) {
+  return <Form key={props.amountLeft} {...props} />;
+}
+
+function Form({ amountLeft, onRefund }: Props) {
   const ids = { amount: useId(), reason: useId() };
   const max = formatPkr(amountLeft);
   const [amount, setAmount] = useState(max.replace(/^PKR /, ''));

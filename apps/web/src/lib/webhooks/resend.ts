@@ -24,7 +24,8 @@ export async function resendEvent(
     if (!row) return { ok: false, reason: 'no_delivery' };
     if (!row.enabled) return { ok: false, reason: 'endpoint_disabled' };
     const d = row.delivery;
-    if (d.state === 'pending' && d.nextAttemptAt && d.nextAttemptAt > now) return { ok: false, reason: 'in_progress' };
+    // Pending means an attempt is on its way or a retry is scheduled: resending then would send twice.
+    if (d.state === 'pending') return { ok: false, reason: 'in_progress' };
     await tx
       .update(webhookDeliveries)
       .set({ state: 'pending', nextAttemptAt: now, updatedAt: now })

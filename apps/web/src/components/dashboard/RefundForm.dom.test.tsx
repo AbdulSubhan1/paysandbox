@@ -40,4 +40,10 @@ describe('RefundForm (PS-RF-010)', () => {
     expect(screen.getByRole('button', { name: /Refunding/ })).toBeDisabled();
     finish({ ok: true });
   });
+
+  it('follows the amount left after a partial refund (final review)', () => {
+    const { rerender } = render(<RefundForm amountLeft={510000} onRefund={vi.fn()} />);
+    rerender(<RefundForm amountLeft={410000} onRefund={vi.fn()} />);
+    expect(screen.getByLabelText('Amount (max PKR 4,100.00)')).toHaveValue('4,100.00');
+  });
 });
