@@ -12,7 +12,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
@@ -92,8 +93,11 @@ export function ProjectsView({ projects, canCreate, max }: { projects: Project[]
 
       {projects.map((p) => (
         <Card key={p.id}>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
             <CardTitle>{p.name}</CardTitle>
+            <Link href={`/dashboard/${p.id}`} className={buttonVariants({ size: 'sm' })}>
+              Open dashboard
+            </Link>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {p.publishableKey && <CopyField label="Publishable key" value={p.publishableKey} />}
