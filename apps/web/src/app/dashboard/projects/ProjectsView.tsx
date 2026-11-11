@@ -19,8 +19,9 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 import { createProjectAction, type RevealedSecret, rollSecretKeyAction } from './actions';
+import { type EndpointSummary, WebhookEndpointCard } from './WebhookEndpointCard';
 
-type Project = { id: string; name: string; publishableKey: string | null; secretLast4: string | null };
+type Project = { id: string; name: string; publishableKey: string | null; secretLast4: string | null; endpoint: EndpointSummary };
 
 function CopyField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
@@ -87,6 +88,7 @@ export function ProjectsView({ projects, canCreate, max }: { projects: Project[]
                 </AlertDialogContent>
               </AlertDialog>
             </div>
+            <WebhookEndpointCard merchantId={p.id} endpoint={p.endpoint} />
           </CardContent>
         </Card>
       ))}

@@ -1,12 +1,10 @@
 'use server';
 
-import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/lib/auth/session';
 import { getDb } from '@/lib/db/client';
-import { merchants } from '@/lib/db/schema';
 import { rollSecretKey } from '@/lib/keys/keys';
-import { createMerchant, MerchantLimitError, MerchantNameError } from '@/lib/merchants/merchants';
+import { createMerchant, getOwnedMerchant, MerchantLimitError, MerchantNameError } from '@/lib/merchants/merchants';
 
 export type RevealedSecret = { ok: true; merchantName: string; secretKey: string } | { ok: false; error: string };
 
@@ -26,10 +24,7 @@ export async function createProjectAction(_prev: RevealedSecret | null, form: Fo
 export async function rollSecretKeyAction(merchantId: string): Promise<RevealedSecret> {
   const user = await requireUser();
   const db = getDb();
-  const [owned] = await db
-    .select()
-    .from(merchants)
-    .where(and(eq(merchants.id, merchantId), eq(merchants.ownerUserId, user.id)));
+  const owned = await getOwnedMerchant(db, user.id, merchantId);
   if (!owned) return { ok: false, error: 'Project not found.' };
   const secretKey = await rollSecretKey(db, merchantId, new Date());
   revalidatePath('/dashboard/projects');

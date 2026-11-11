@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { type APIRequestContext, expect, type Page } from '@playwright/test';
 import { E2E } from '../src/test/seed-e2e';
 
@@ -35,3 +36,9 @@ export async function fillCheckout(page: Page, card: string) {
 
 export const payButton = (page: Page) => page.getByRole('button', { name: /^Pay PKR/ });
 export const banner = (page: Page) => page.getByText('TEST MODE · no real payments');
+
+export async function expectNoSeriousA11yIssues(page: Page) {
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+  const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+}

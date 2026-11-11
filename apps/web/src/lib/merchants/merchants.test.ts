@@ -5,7 +5,7 @@ import { apiKeys } from '@/lib/db/schema';
 import { findMerchantBySecretKey } from '@/lib/keys/keys';
 import { createTestDb } from '@/test/db';
 import { makeUser } from '@/test/factories';
-import { createMerchant, listMerchants, MerchantLimitError } from './merchants';
+import { createMerchant, getOwnedMerchant, listMerchants, MerchantLimitError } from './merchants';
 import { validateMerchantName } from './names';
 
 describe('validateMerchantName', () => {
@@ -52,5 +52,16 @@ describe('createMerchant', () => {
   it('refuses an invalid name', async () => {
     const user = await makeUser(db);
     await expect(createMerchant(db, user.id, 'HBL')).rejects.toThrow();
+  });
+});
+
+describe('getOwnedMerchant', () => {
+  it("returns the user's own project and nobody else's", async () => {
+    const db = await createTestDb();
+    const owner = await makeUser(db);
+    const stranger = await makeUser(db);
+    const { merchant } = await createMerchant(db, owner.id, 'Owned Shop');
+    expect((await getOwnedMerchant(db, owner.id, merchant.id))?.name).toBe('Owned Shop');
+    expect(await getOwnedMerchant(db, stranger.id, merchant.id)).toBeNull();
   });
 });

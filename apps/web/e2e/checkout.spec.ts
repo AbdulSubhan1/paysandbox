@@ -1,12 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
-import { banner, createSession, fillCheckout, payButton, waitForCheckout } from './helpers';
-
-async function expectNoSeriousA11yIssues(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
-  const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-  expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
-}
+import { expect, test } from '@playwright/test';
+import { banner, createSession, expectNoSeriousA11yIssues, fillCheckout, payButton, waitForCheckout } from './helpers';
 
 test('4242 pays and returns to the store @smoke', async ({ page }) => {
   await page.goto('/e2e/store');
