@@ -5,5 +5,6 @@ export default defineConfig({
   schema: './src/lib/db/schema.ts',
   out: './drizzle',
   casing: 'snake_case',
-  dbCredentials: { url: process.env.DATABASE_URL ?? '' },
+  // Migrations use Neon's direct connection when the integration provides one; the app uses the pooled URL.
+  dbCredentials: { url: process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || '' },
 });
