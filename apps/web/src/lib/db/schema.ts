@@ -160,6 +160,7 @@ export const paymentActivity = pgTable(
   'payment_activity',
   {
     id: text().primaryKey(),
+    seq: bigint({ mode: 'number' }).generatedAlwaysAsIdentity(), // insertion order: rows can share a timestamp
     checkoutSessionId: text().notNull().references(() => checkoutSessions.id, { onDelete: 'cascade' }),
     paymentId: text().references(() => payments.id, { onDelete: 'cascade' }),
     kind: text().notNull(),
