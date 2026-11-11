@@ -50,7 +50,9 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter web exec playwright install --with-deps chromium
+      # --with-deps runs apt-get; when the Ubuntu mirror is down, fall back to the browser alone
+      # (GitHub's runner images already ship Chromium's system libraries).
+      - run: pnpm --filter web exec playwright install --with-deps chromium || pnpm --filter web exec playwright install chromium
       - run: pnpm --filter web exec next build
       # Pull requests run the @smoke set; the nightly schedule runs everything.
       - run: pnpm --filter web exec playwright test ${{ github.event_name == 'schedule' && ' ' || '--grep @smoke' }}
