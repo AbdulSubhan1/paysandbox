@@ -24,4 +24,5 @@ Live at https://paysandbox.vercel.app (invite-only).
 | v0.1.0 (Plan 1) | Invite-only GitHub sign-in, projects and keys, checkout sessions, hosted checkout with every test-card outcome and OTP, redirect back |
 | v0.2.0 (Plan 2) | Signed webhooks with retries, session expiry and dispute deadline timers, refunds, disputes |
 | v0.3.0 (Plan 3) | Merchant dashboard: overview, payments, customers, disputes, test cards, developers page, webhooks, API request log, project switcher |
+| Per-project currency | Each project charges in its own currency: PKR, USD, AED, SAR, GBP or EUR |
 | Plan 4 (written, not built) | Guest demo sandboxes, demo store, public docs page, admin page, security and release checks |

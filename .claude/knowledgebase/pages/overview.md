@@ -15,7 +15,7 @@ A one-glance summary of the project's test payments.
 
 ## Rules
 - The system shall count only this project's payments.
-- The system shall show amounts in PKR.
+- The system shall show amounts in the project's currency.
 
 ## Open questions
 - None.

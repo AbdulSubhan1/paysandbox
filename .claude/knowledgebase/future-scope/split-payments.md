@@ -14,7 +14,7 @@ A **platform** project connects **sellers** (connected accounts). One customer p
 - **Disputes** take the disputed amount from the seller's balance; if that goes negative, it is recovered from their next sales.
 
 ## Rules
-- The system shall make the split add up exactly to the amount paid, in paisa, with any rounding remainder going to the platform.
+- The system shall make the split add up exactly to the amount paid, in the smallest currency unit, with any rounding remainder going to the platform.
 - The system shall never let a seller see another seller's sales or the platform's fee rules.
 - The system shall send webhooks to the platform for every split, refund reversal and dispute deduction.
 
