@@ -51,6 +51,14 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Payment' } } } }
         '404': { $ref: '#/components/responses/Error' }
+  /events/{id}:
+    get:
+      summary: Retrieve an event (the same envelope as webhook bodies)
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Event' } } } }
+        '404': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
     secretKey:
@@ -99,6 +107,23 @@ components:
         expires_at: { type: integer, description: Unix seconds }
         created: { type: integer, description: Unix seconds }
         livemode: { const: false }
+    Event:
+      type: object
+      additionalProperties: false
+      required: [id, object, type, created, livemode, data]
+      properties:
+        id: { type: string, pattern: '^evt_[0-9A-Za-z]{24}$' }
+        object: { const: event }
+        type:
+          enum: [payment.succeeded, payment.failed, payment.requires_action, refund.created, dispute.created, dispute.closed]
+        created: { type: integer, description: Unix seconds }
+        livemode: { const: false }
+        data:
+          type: object
+          additionalProperties: false
+          required: [object]
+          properties:
+            object: { type: object, description: Snapshot of the payment, refund or dispute when the event happened }
     Payment:
       type: object
       additionalProperties: false
