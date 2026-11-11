@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  // The dashboard has one page so far.
+  async redirects() {
+    return [{ source: '/dashboard', destination: '/dashboard/projects', permanent: false }];
+  },
   async headers() {
     return [
       {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -39,7 +40,6 @@ export function WebhookEndpointCard({ merchantId, endpoint }: { merchantId: stri
   const [secret, setSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [type, setType] = useState<string>(TEST_EVENT_TYPES[0]);
-  const [testMsg, setTestMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [capReached, setCapReached] = useState(false);
   const [rollOpen, setRollOpen] = useState(false); // AlertDialogAction is a plain button: close the dialog ourselves
 
@@ -56,7 +56,15 @@ export function WebhookEndpointCard({ merchantId, endpoint }: { merchantId: stri
               size="sm"
               variant="outline"
               onClick={async () => {
-                if ((await reenableWebhookEndpointAction(merchantId)).ok) setEnabled(true);
+                try {
+                  const r = await reenableWebhookEndpointAction(merchantId);
+                  if (r.ok) {
+                    setEnabled(true);
+                    toast.success('Endpoint re-enabled');
+                  } else toast.error(r.error);
+                } catch {
+                  toast.error("Couldn't re-enable the endpoint. Try again in a moment.");
+                }
               }}
             >
               Re-enable
@@ -70,13 +78,19 @@ export function WebhookEndpointCard({ merchantId, endpoint }: { merchantId: stri
         onSubmit={async (e) => {
           e.preventDefault();
           setSaving(true);
-          const r = await saveWebhookEndpointAction(merchantId, url);
-          setSaving(false);
-          setError(r.ok ? null : r.error);
-          if (r.ok) {
-            setUrl(r.url);
-            setSaved(true);
-            setEnabled(true);
+          try {
+            const r = await saveWebhookEndpointAction(merchantId, url);
+            setError(r.ok ? null : r.error);
+            if (r.ok) {
+              setUrl(r.url);
+              setSaved(true);
+              setEnabled(true);
+              toast.success('Endpoint saved');
+            } else toast.error(r.error);
+          } catch {
+            toast.error("Couldn't save the endpoint. Try again in a moment.");
+          } finally {
+            setSaving(false);
           }
         }}
       >
@@ -113,6 +127,7 @@ export function WebhookEndpointCard({ merchantId, endpoint }: { merchantId: stri
                     onClick={async () => {
                       await navigator.clipboard.writeText(secret);
                       setCopied(true);
+                      toast.success('Signing secret copied');
                     }}
                   >
                     {copied ? 'Copied' : 'Copy'}
@@ -126,8 +141,13 @@ export function WebhookEndpointCard({ merchantId, endpoint }: { merchantId: stri
                   size="sm"
                   variant="outline"
                   onClick={async () => {
-                    const r = await revealWebhookSecretAction(merchantId);
-                    if (r.ok) setSecret(r.secret);
+                    try {
+                      const r = await revealWebhookSecretAction(merchantId);
+                      if (r.ok) setSecret(r.secret);
+                      else toast.error(r.error);
+                    } catch {
+                      toast.error("Couldn't load the signing secret. Try again in a moment.");
+                    }
                   }}
                 >
                   Reveal
@@ -148,11 +168,17 @@ export function WebhookEndpointCard({ merchantId, endpoint }: { merchantId: stri
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={async () => {
-                      const r = await rollWebhookSecretAction(merchantId);
-                      setRollOpen(false);
-                      if (r.ok) {
-                        setSecret(r.secret);
-                        setCopied(false);
+                      try {
+                        const r = await rollWebhookSecretAction(merchantId);
+                        if (r.ok) {
+                          setSecret(r.secret);
+                          setCopied(false);
+                          toast.success('Signing secret rolled', { description: 'The old secret keeps working for 24 hours.' });
+                        } else toast.error(r.error);
+                      } catch {
+                        toast.error("Couldn't roll the signing secret. Try again in a moment.");
+                      } finally {
+                        setRollOpen(false);
                       }
                     }}
                   >
@@ -183,19 +209,21 @@ export function WebhookEndpointCard({ merchantId, endpoint }: { merchantId: stri
               variant="outline"
               disabled={capReached || !enabled}
               onClick={async () => {
-                const r = await sendTestEventAction(merchantId, type);
-                setTestMsg(r.ok ? { ok: true, text: `Sent ${type}. It arrives at your endpoint in a few seconds.` } : { ok: false, text: r.error });
-                if (!r.ok && r.error.includes('50 test events')) setCapReached(true);
+                try {
+                  const r = await sendTestEventAction(merchantId, type);
+                  if (r.ok) toast.success(`Sent ${type}`, { description: 'It arrives at your endpoint in a few seconds.' });
+                  else {
+                    toast.error(r.error);
+                    if (r.error.includes('50 test events')) setCapReached(true);
+                  }
+                } catch {
+                  toast.error("Couldn't send the test event. Try again in a moment.");
+                }
               }}
             >
               Send test event
             </Button>
           </div>
-          {testMsg && (
-            <p role="status" className={testMsg.ok ? 'text-sm text-muted-foreground' : 'text-sm text-destructive'}>
-              {testMsg.text}
-            </p>
-          )}
         </>
       )}
     </div>
