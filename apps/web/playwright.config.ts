@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
-import { E2E_BASE_URL, E2E_DATABASE_URL, E2E_PORT } from './e2e/env';
+import { E2E_BASE_URL, E2E_DATABASE_URL, E2E_PORT, E2E_WEBHOOK_SECRET_KEY } from './e2e/env';
+
+// The test process also writes endpoint secrets (e2e/helpers.ts), so it needs the same key as the app.
+process.env.WEBHOOK_SECRET_KEY ??= E2E_WEBHOOK_SECRET_KEY;
 
 const ci = !!process.env.CI;
 
@@ -34,6 +37,7 @@ export default defineConfig({
         APP_URL: E2E_BASE_URL,
         BETTER_AUTH_URL: E2E_BASE_URL,
         BETTER_AUTH_SECRET: 'e2e-only-secret-not-used-anywhere-else-0000',
+        WEBHOOK_SECRET_KEY: E2E_WEBHOOK_SECRET_KEY,
       },
     },
   ],

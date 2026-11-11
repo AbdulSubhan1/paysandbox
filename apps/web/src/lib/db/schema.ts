@@ -225,3 +225,113 @@ export const usageDaily = pgTable(
   },
   (t) => [primaryKey({ columns: [t.merchantId, t.day] })],
 );
+
+// ---- Plan 2: webhooks, refunds, disputes, jobs ----
+
+/** One endpoint per merchant. The signing secret is stored encrypted (lib/crypto/secretbox.ts). */
+export const webhookEndpoints = pgTable('webhook_endpoints', {
+  id: text().primaryKey(),
+  merchantId: text()
+    .notNull()
+    .unique()
+    .references(() => merchants.id, { onDelete: 'cascade' }),
+  url: text().notNull(),
+  secretEncrypted: text().notNull(),
+  previousSecretEncrypted: text(), // kept 24 h after a roll
+  previousSecretExpiresAt: timestamp({ withTimezone: true }),
+  enabled: boolean().notNull().default(true),
+  consecutiveFailures: integer().notNull().default(0), // failed deliveries (events) in a row
+  disabledReason: text(),
+  createdAt: createdAt(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+export const deliveryState = pgEnum('delivery_state', ['pending', 'delivered', 'failed']);
+
+/** One per event and endpoint; its attempts are in webhook_attempts. */
+export const webhookDeliveries = pgTable(
+  'webhook_deliveries',
+  {
+    id: text().primaryKey(),
+    merchantId: text().notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+    eventId: text().notNull().references(() => events.id, { onDelete: 'cascade' }),
+    endpointId: text().notNull().references(() => webhookEndpoints.id, { onDelete: 'cascade' }),
+    state: deliveryState().notNull().default('pending'),
+    attemptCount: integer().notNull().default(0),
+    nextAttemptAt: timestamp({ withTimezone: true }),
+    lastError: text(),
+    createdAt: createdAt(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.eventId, t.endpointId), index().on(t.merchantId, t.createdAt)],
+);
+
+export const webhookAttempts = pgTable(
+  'webhook_attempts',
+  {
+    id: text().primaryKey(),
+    deliveryId: text().notNull().references(() => webhookDeliveries.id, { onDelete: 'cascade' }),
+    attempt: integer().notNull(),
+    url: text().notNull(),
+    statusCode: integer(), // null: timeout, network error or blocked address
+    error: text(), // timeout | network | blocked_address | redirect
+    durationMs: integer().notNull(),
+    responseSnippet: text(), // first 1 KB of the response body
+    requestHeaders: jsonb().notNull(),
+    attemptedAt: createdAt(),
+  },
+  (t) => [index().on(t.deliveryId, t.attempt)],
+);
+
+export const refunds = pgTable(
+  'refunds',
+  {
+    id: text().primaryKey(),
+    merchantId: text().notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+    paymentId: text().notNull().references(() => payments.id, { onDelete: 'cascade' }),
+    amount: money().notNull(),
+    reason: text({ enum: ['requested_by_customer', 'duplicate', 'fraudulent'] }).notNull(),
+    status: text({ enum: ['succeeded'] }).notNull().default('succeeded'),
+    createdAt: createdAt(),
+  },
+  (t) => [index().on(t.paymentId)],
+);
+
+export const disputeStatus = pgEnum('dispute_status', ['needs_response', 'won', 'lost']);
+
+export const disputes = pgTable('disputes', {
+  id: text().primaryKey(),
+  merchantId: text().notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  paymentId: text()
+    .notNull()
+    .unique() // one dispute per payment, ever
+    .references(() => payments.id, { onDelete: 'cascade' }),
+  amount: money().notNull(),
+  reason: text().notNull(),
+  status: disputeStatus().notNull().default('needs_response'),
+  previousPaymentStatus: paymentStatus().notNull(), // restored when the dispute is won
+  respondBy: timestamp({ withTimezone: true }).notNull(),
+  createdAt: createdAt(),
+  closedAt: timestamp({ withTimezone: true }),
+});
+
+export const jobKind = pgEnum('job_kind', ['deliver_webhook', 'expire_session', 'open_dispute', 'dispute_deadline']);
+
+/** Transactional outbox for timers and retries (lib/jobs/jobs.ts). */
+export const jobs = pgTable(
+  'jobs',
+  {
+    id: text().primaryKey(),
+    merchantId: text().notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+    kind: jobKind().notNull(),
+    refId: text().notNull(),
+    runAt: timestamp({ withTimezone: true }).notNull(),
+    state: text({ enum: ['pending', 'done'] }).notNull().default('pending'),
+    attempts: integer().notNull().default(0),
+    lockedUntil: timestamp({ withTimezone: true }),
+    publishedAt: timestamp({ withTimezone: true }),
+    lastError: text(),
+    createdAt: createdAt(),
+  },
+  (t) => [index().on(t.state, t.runAt), index().on(t.merchantId, t.state, t.runAt)],
+);

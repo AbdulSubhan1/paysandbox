@@ -166,7 +166,7 @@ One script on one key must not be able to use up a month of Vercel, Neon or QSta
 |---|---|---|
 | API requests | 1,000 | 429 `daily_limit_reached`, `Retry-After` = seconds to midnight |
 | Checkout sessions created | 200 | same |
-| Webhook delivery attempts (incl. retries) | 500 | further deliveries wait until the next day |
+| Webhook delivery attempts (incl. retries) | 200 (lowered from 500 on 2026-11-11: QStash free plan is 500 messages a day per account) | further deliveries wait until the next day |
 | "Send test event" | 50 | button disabled with a message |
 
 - Requests refused for the cap are counted but **not** written to `api_request_log`, so abuse can't fill the database.

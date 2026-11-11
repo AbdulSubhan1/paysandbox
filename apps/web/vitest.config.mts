@@ -9,6 +9,7 @@ export default defineConfig({
     hookTimeout: 30_000,
     maxWorkers: 3, // each worker holds PGlite instances; more workers ran the machine out of memory
     testTimeout: 30_000,
+    env: { WEBHOOK_SECRET_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' }, // 32 zero bytes: tests only
     coverage: {
       provider: 'v8',
       include: ['src/lib/**/*.ts'],

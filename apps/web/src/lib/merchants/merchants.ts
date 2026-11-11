@@ -42,3 +42,12 @@ export async function listMerchants(db: Db, userId: string): Promise<Merchant[]>
     .where(and(eq(merchants.ownerUserId, userId), eq(merchants.isGuest, false)))
     .orderBy(asc(merchants.createdAt));
 }
+
+/** The project if this user owns it; server actions check this before touching a project. */
+export async function getOwnedMerchant(db: Db, userId: string, merchantId: string): Promise<Merchant | null> {
+  const [row] = await db
+    .select()
+    .from(merchants)
+    .where(and(eq(merchants.id, merchantId), eq(merchants.ownerUserId, userId)));
+  return row ?? null;
+}

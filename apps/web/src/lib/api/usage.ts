@@ -5,7 +5,8 @@ import { karachiDay, secondsUntilKarachiMidnight } from '@/lib/time';
 import { ApiError } from './errors';
 
 /** Per merchant, per calendar day in Pakistan. Keeps one merchant from using up the free tiers. */
-export const CAPS = { api_requests: 1000, checkout_sessions: 200, webhook_attempts: 500, test_events: 50 } as const;
+// webhook_attempts: 200, not the design's 500, so one project can't use up the QStash free plan (500 messages a day).
+export const CAPS = { api_requests: 1000, checkout_sessions: 200, webhook_attempts: 200, test_events: 50 } as const;
 export type UsageCounter = keyof typeof CAPS;
 
 const COLUMNS = {

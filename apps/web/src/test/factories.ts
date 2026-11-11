@@ -1,7 +1,9 @@
 import type { Db } from '@/lib/db/client';
-import { checkoutSessions, merchants, users } from '@/lib/db/schema';
+import { encryptSecret } from '@/lib/crypto/secretbox';
+import { checkoutSessions, customers, merchants, payments, users, webhookEndpoints } from '@/lib/db/schema';
 import { newId } from '@/lib/ids';
 import { addHours } from '@/lib/time';
+import { newSigningSecret } from '@/lib/webhooks/signing';
 
 export async function makeUser(db: Db, overrides: Partial<typeof users.$inferInsert> = {}) {
   const id = newId('usr');
@@ -36,4 +38,42 @@ export async function makeSession(db: Db, merchantId: string, overrides: Partial
     })
     .returning();
   return row;
+}
+
+/** A payment on its own session and customer; succeeded with the 4242 card unless overridden. */
+export async function makePayment(db: Db, merchantId: string, overrides: Partial<typeof payments.$inferInsert> = {}) {
+  const session = overrides.checkoutSessionId ? null : await makeSession(db, merchantId);
+  let customerId = overrides.customerId;
+  if (!customerId) {
+    const id = newId('cus');
+    await db.insert(customers).values({ id, merchantId, email: `${id.toLowerCase()}@example.com`, name: 'Ayesha Khan' });
+    customerId = id;
+  }
+  const [row] = await db
+    .insert(payments)
+    .values({
+      id: newId('pay'),
+      merchantId,
+      checkoutSessionId: session?.id ?? overrides.checkoutSessionId!,
+      customerId,
+      attemptId: newId('req'),
+      amount: 510000,
+      status: 'succeeded',
+      cardBrand: 'visa',
+      cardLast4: '4242',
+      testCard: 'visa_success',
+      ...overrides,
+    })
+    .returning();
+  return row;
+}
+
+/** An endpoint inserted directly (no DNS check), with its plain signing secret for verifying deliveries. */
+export async function makeEndpoint(db: Db, merchantId: string, overrides: { url?: string; enabled?: boolean } = {}) {
+  const secret = newSigningSecret();
+  const [endpoint] = await db
+    .insert(webhookEndpoints)
+    .values({ id: newId('we'), merchantId, url: 'https://hooks.example.com/ps', secretEncrypted: encryptSecret(secret), ...overrides })
+    .returning();
+  return { endpoint, secret };
 }

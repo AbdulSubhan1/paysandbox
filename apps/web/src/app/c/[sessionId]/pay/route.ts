@@ -1,5 +1,9 @@
+import { flushJobsAfterResponse } from '@/lib/jobs/flush';
 import { checkoutError, handleCheckoutPost, strings } from '@/lib/payments/checkout-http';
 import { payCheckoutSession } from '@/lib/payments/pay';
+
+// Room for the after-response webhook attempts (lib/jobs/flush.ts).
+export const maxDuration = 60;
 
 // A short pause so the customer sees "Processing…", like a real gateway. Skipped in tests.
 const PROCESSING_DELAY_MS = process.env.NODE_ENV === 'test' ? 0 : 800;
@@ -10,6 +14,7 @@ export async function POST(req: Request, ctx: RouteContext<'/c/[sessionId]/pay'>
   if (raw && typeof raw === 'object' && Object.hasOwn(raw, 'cvc')) {
     return checkoutError('cvc_not_accepted', 'The CVC is checked in your browser and must never be sent.');
   }
+  flushJobsAfterResponse({ sessionId }); // sends the payment's webhook after the response
   return handleCheckoutPost(req, async (body, db) => {
     const f = strings(body, ['attempt_id', 'email', 'name', 'card_number', 'expiry'] as const);
     await new Promise((r) => setTimeout(r, PROCESSING_DELAY_MS));

@@ -17,3 +17,8 @@ const NEXT: Record<PaymentStatus | 'new', readonly PaymentStatus[]> = {
 export function canTransition(from: PaymentStatus | null, to: PaymentStatus): boolean {
   return NEXT[from ?? 'new'].includes(to);
 }
+
+/** Every status change in the engines goes through this, so an illegal one fails loudly instead of being stored. */
+export function assertTransition(from: PaymentStatus | null, to: PaymentStatus): void {
+  if (!canTransition(from, to)) throw new Error(`Illegal payment status change: ${from ?? 'new'} → ${to}`);
+}
