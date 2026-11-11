@@ -45,6 +45,8 @@ export function CardForm({
   defaultEmail: string;
 }) {
   const cardRef = useRef<HTMLInputElement>(null);
+  // One id per payment attempt, kept across retries until the server gives a definite answer (no double charge).
+  const attemptId = useRef<string | null>(null);
   const [guard, setGuard] = useState<GuardResult>({ state: 'empty' });
   const [email, setEmail] = useState(defaultEmail);
   const [exp, setExp] = useState('');
@@ -97,13 +99,15 @@ export function CardForm({
     setFormError(null);
     try {
       // The CVC was checked above and is deliberately not sent.
+      attemptId.current ??= crypto.randomUUID();
       const r = await post('pay', {
-        attempt_id: crypto.randomUUID(),
+        attempt_id: attemptId.current,
         email,
         name,
         card_number: cardRef.current?.value.replace(/\D/g, '') ?? '',
         expiry: exp,
       });
+      attemptId.current = null; // the server answered: the next click is a new attempt
       if ('error' in r) {
         if (r.error.code === 'session_complete' || r.error.code === 'session_expired') window.location.reload();
         else if (r.error.field && SERVER_FIELDS[r.error.field]) setErrors({ [SERVER_FIELDS[r.error.field]]: r.error.message });

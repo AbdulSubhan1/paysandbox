@@ -82,4 +82,25 @@ describe('CardForm', () => {
     await userEvent.click(screen.getByRole('button', { name: /^Pay PKR 5,100.00$/ }));
     expect(await screen.findByRole('dialog', { name: 'Confirm your payment' })).toBeInTheDocument();
   });
+
+  it('reuses the attempt id when retrying after a network failure (Review Focus 1)', async () => {
+    fetchMock
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(
+        Response.json({ status: 'failed', payment_id: 'pay_1', failure: { code: 'card_declined', decline_code: 'generic_decline', message: 'Your card was declined.' } }),
+      )
+      .mockResolvedValueOnce(Response.json({ status: 'succeeded', payment_id: 'pay_2', return_url: 'https://shop.test/thanks?pay=pay_2' }));
+    renderForm();
+    await fillValid();
+    const pay = () => userEvent.click(screen.getByRole('button', { name: /^Pay PKR 5,100.00$/ }));
+    await pay();
+    expect(await screen.findByText(/Could not reach PaySandbox/)).toBeInTheDocument();
+    await pay();
+    await userEvent.click(await screen.findByRole('button', { name: 'Try another card' }));
+    await fillValid();
+    await pay();
+    const ids = fetchMock.mock.calls.map(([, init]) => JSON.parse(init.body).attempt_id);
+    expect(ids[1]).toBe(ids[0]); // same click, retried
+    expect(ids[2]).not.toBe(ids[1]); // a new attempt after a definite answer
+  });
 });

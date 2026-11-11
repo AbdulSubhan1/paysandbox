@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db/client';
 import { newId } from '@/lib/ids';
 import { findMerchantBySecretKey } from '@/lib/keys/keys';
 import { withIdempotency } from '@/lib/idempotency/idempotency';
+import { reportError } from '@/lib/observability/report';
 import { ApiError, errorBody } from './errors';
 import { logApiRequest } from './request-log';
 import { consumeUsage, dailyLimitError } from './usage';
@@ -103,7 +104,7 @@ export function withApi(handler: ApiHandler, opts: { idempotent?: boolean } = {}
         : await run();
     } catch (e) {
       const err = e instanceof ApiError ? e : internalError();
-      if (!(e instanceof ApiError)) console.error('api_error', req.method, path, e instanceof Error ? e.name : 'unknown');
+      if (!(e instanceof ApiError)) reportError(`api ${req.method} ${path}`, e);
       response = { status: err.status, body: errorBody(err), headers: err.headers };
     }
     const errorCode = response.status >= 400 ? errorCodeOf(response.body) : null;

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 import { findTestCard } from '@/lib/card-guard/guard';
 import { parseExpiry, validateEmail, validateName } from '@/lib/checkout/validate';
 import type { Db } from '@/lib/db/client';
@@ -32,6 +32,7 @@ export type PayErrorCode =
   | 'session_expired'
   | 'session_complete'
   | 'payment_in_progress'
+  | 'too_many_attempts'
   | 'invalid_field';
 
 export class PayError extends Error {
@@ -45,6 +46,9 @@ export class PayError extends Error {
 }
 
 type Tx = Db;
+
+/** Bounds what anyone holding a checkout link can create in the merchant's account. */
+export const MAX_PAYMENTS_PER_SESSION = 10;
 
 /** Appends timeline rows; `seq` keeps their order even when they share a timestamp. */
 export async function addActivity(
@@ -108,11 +112,17 @@ export async function payCheckoutSession(db: Db, input: PayInput, now: Date): Pr
     const status = effectiveSessionStatus(session, now);
     if (status === 'expired') throw new PayError('session_expired', 'This checkout has expired.');
     if (status === 'complete') throw new PayError('session_complete', 'This checkout is already paid.');
+    // A payment still waiting for its OTP (e.g. the tab was closed): send the customer back to that OTP step.
     const [pending] = await tx
-      .select({ id: payments.id })
+      .select()
       .from(payments)
       .where(and(eq(payments.checkoutSessionId, session.id), eq(payments.status, 'requires_action')));
-    if (pending) throw new PayError('payment_in_progress', 'A payment on this checkout is waiting for its OTP.');
+    if (pending) return resultFor(pending, session.successUrl);
+
+    const [{ n }] = await tx.select({ n: count() }).from(payments).where(eq(payments.checkoutSessionId, session.id));
+    if (n >= MAX_PAYMENTS_PER_SESSION) {
+      throw new PayError('too_many_attempts', 'Too many payment attempts on this checkout. Go back to the store and start again.');
+    }
 
     const email = input.email.trim().toLowerCase();
     const [customer] = await tx

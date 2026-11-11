@@ -7,6 +7,7 @@ import { idempotencyKeys } from '@/lib/db/schema';
 import { addHours } from '@/lib/time';
 
 const KEY_TTL_HOURS = 24;
+const ABANDONED_AFTER_MS = 60_000; // an in-progress key this old belongs to a request that crashed
 const MAX_KEY_LENGTH = 255;
 
 export type IdempotencyArgs = {
@@ -44,8 +45,13 @@ export async function withIdempotency(db: Db, args: IdempotencyArgs, run: () => 
   const hash = requestHash(args);
   const where = and(eq(idempotencyKeys.merchantId, merchantId), eq(idempotencyKeys.key, key));
 
-  // Keys older than 24 hours are forgotten.
+  // Keys older than 24 hours are forgotten; in-progress keys whose request died are released after a minute.
   await db.delete(idempotencyKeys).where(and(where, lt(idempotencyKeys.createdAt, addHours(now, -KEY_TTL_HOURS))));
+  await db
+    .delete(idempotencyKeys)
+    .where(
+      and(where, eq(idempotencyKeys.status, 'in_progress'), lt(idempotencyKeys.createdAt, new Date(now.getTime() - ABANDONED_AFTER_MS))),
+    );
 
   const claimed = await db
     .insert(idempotencyKeys)

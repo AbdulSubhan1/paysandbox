@@ -59,6 +59,11 @@ describe('withIdempotency', () => {
     await expect(withIdempotency(db, args('busy', {}), run)).rejects.toMatchObject({ status: 409, code: 'idempotency_key_in_use' });
   });
 
+  it('reclaims a key left in progress by a crashed request after 60 seconds', async () => {
+    await db.insert(idempotencyKeys).values({ merchantId, key: 'crashed', requestHash: 'x', status: 'in_progress', createdAt: new Date(now.getTime() - 61_000) });
+    expect((await withIdempotency(db, args('crashed', {}), run)).body).toEqual({ id: 'cs_1' });
+  });
+
   it('keeps keys per merchant (PS-IDEM-005)', async () => {
     await withIdempotency(db, args('order_1042', { amount: 510000 }), run);
     const other = await withIdempotency(db, args('order_1042', { amount: 510000 }, { merchantId: otherId }), run);

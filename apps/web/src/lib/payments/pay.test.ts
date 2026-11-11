@@ -112,9 +112,16 @@ describe('payCheckoutSession and the session', () => {
     await expect(pay()).rejects.toMatchObject({ code: 'session_complete' });
   });
 
-  it('refuses a new attempt while an OTP is pending', async () => {
-    await pay({ cardNumber: '4000000000003220' });
-    await expect(pay()).rejects.toMatchObject({ code: 'payment_in_progress' });
+  it('returns the pending OTP payment instead of stranding the customer (PS-CO-011, PS-3DS-005)', async () => {
+    const pending = await pay({ cardNumber: '4000000000003220' });
+    const again = await pay();
+    expect(again).toEqual({ status: 'requires_action', paymentId: pending.paymentId });
+    expect(await db.select().from(payments)).toHaveLength(1);
+  });
+
+  it('stops after 10 payment attempts on one checkout', async () => {
+    for (let i = 0; i < 10; i++) expect((await pay({ cardNumber: '4000000000009995' })).status).toBe('failed');
+    await expect(pay({ cardNumber: '4000000000009995' })).rejects.toMatchObject({ code: 'too_many_attempts' });
   });
 
   it('refuses an expired session (PS-RD-004)', async () => {

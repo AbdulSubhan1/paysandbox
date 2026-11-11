@@ -1,4 +1,5 @@
 import { getDb } from '@/lib/db/client';
+import { reportError } from '@/lib/observability/report';
 import { PayError, type PayErrorCode, type PayResult } from './pay';
 
 const STATUS: Record<PayErrorCode | 'cvc_not_accepted' | 'internal_error', number> = {
@@ -9,6 +10,7 @@ const STATUS: Record<PayErrorCode | 'cvc_not_accepted' | 'internal_error', numbe
   session_complete: 409,
   payment_in_progress: 409,
   session_expired: 410,
+  too_many_attempts: 429,
   internal_error: 500,
 };
 
@@ -30,7 +32,7 @@ function toJson(r: PayResult) {
 
 /**
  * Shared shell for the checkout's browser-facing routes. Never logs the request body (it can hold a card number);
- * unexpected errors are reported by name only.
+ * unexpected errors are reported by name and code only.
  */
 export async function handleCheckoutPost(
   req: Request,
@@ -48,6 +50,7 @@ export async function handleCheckoutPost(
     return Response.json(toJson(await run(body, getDb())), { headers: NO_STORE });
   } catch (e) {
     if (e instanceof PayError) return checkoutError(e.code, e.message, e.field);
+    reportError(`checkout${new URL(req.url).pathname.replace(/^\/c\/[^/]+/, '')}`, e);
     return checkoutError('internal_error', 'Something went wrong on our side. Try again.');
   }
 }
