@@ -1,5 +1,7 @@
 # PaySandbox component list (from the mockup, shadcn/ui based)
 
+> Update 2026-11-12: shadcn/ui was replaced by our own components in `apps/web/src/components/ui` (see the KB's engineering highlights). The list below is the original plan.
+
 Three separate places use UI, and each needs different things:
 
 | Surface | Where it runs | Rule |
