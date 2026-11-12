@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const { DisputePanel } = await import('./DisputePanel');
 
 const dispute = { currency: 'pkr' as const, amount: 410000, reason: 'product_not_received', respondBy: new Date('2026-11-18T10:00:00Z') };

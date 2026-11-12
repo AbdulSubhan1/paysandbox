@@ -10,7 +10,7 @@ const FACTS = [
   { title: 'Refunds and disputes', text: 'Refund in full or in part, open a dispute, then win or lose it.' },
 ];
 
-const bigButton = 'h-11 w-full px-5 text-base md:w-auto';
+const bigButton = 'w-full md:w-auto';
 
 export default function Home() {
   return (
@@ -44,10 +44,10 @@ export default function Home() {
 
       <div>
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <a href={DEMO_JOURNEY_URL} className={buttonVariants({ size: 'lg', className: bigButton })}>
+          <a href={DEMO_JOURNEY_URL} className={buttonVariants({ size: 'xl', className: bigButton })}>
             See it in a real journey
           </a>
-          <SignInButton variant="outline" className={bigButton}>
+          <SignInButton variant="outline" size="xl" className={bigButton}>
             Sign in (invite-only)
           </SignInButton>
         </div>

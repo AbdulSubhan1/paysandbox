@@ -14,7 +14,7 @@ vi.mock('./actions', () => ({
 }));
 
 const toast = { success: vi.fn(), error: vi.fn() };
-vi.mock('sonner', () => ({ toast }));
+vi.mock('@/components/ui/toast', () => ({ toast }));
 
 const { WebhookEndpointCard } = await import('./WebhookEndpointCard');
 

@@ -42,7 +42,7 @@ async function Logs({ params, searchParams }: Props) {
             key={String(label)}
             href={f ? `${base}?failed=1` : base}
             aria-current={failedOnly === f ? 'true' : undefined}
-            className={cn('rounded-full border border-border px-3 py-1 text-sm', failedOnly === f ? 'border-primary bg-primary text-primary-foreground' : 'bg-card')}
+            className={cn('rounded-full border px-3 py-1 text-sm', failedOnly === f ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card')}
           >
             {label}
           </Link>

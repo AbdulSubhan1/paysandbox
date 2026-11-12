@@ -26,7 +26,7 @@ test('refund part of a payment, then win a simulated dispute (PS-RF-010, PS-DP-0
   await amount.fill('1,000');
   await page.getByLabel('Reason').selectOption('requested_by_customer');
   await page.getByRole('button', { name: 'Refund', exact: true }).click();
-  await expect(page.locator('[data-sonner-toast]').getByText('Refunded PKR 1,000.00')).toBeVisible();
+  await expect(page.locator('[data-toast]').getByText('Refunded PKR 1,000.00')).toBeVisible();
   await expect(page.getByText('Partially refunded').first()).toBeVisible();
   await expect(page.getByText('Refunded PKR 1,000.00', { exact: true }).last()).toBeVisible();
 

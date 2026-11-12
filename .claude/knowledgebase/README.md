@@ -9,6 +9,7 @@ Live at https://paysandbox.vercel.app (invite-only).
 - [Payment lifecycle](overview/payment-lifecycle.md): every state a payment can be in and what moves it.
 - [Safety and limits](overview/safety-and-limits.md): card safety, the TEST MODE banner, daily caps.
 - [Glossary](overview/glossary.md)
+- [Engineering highlights](overview/engineering-highlights.md): decisions worth knowing when reading the code.
 
 ## Sections
 | Section | What's in it |

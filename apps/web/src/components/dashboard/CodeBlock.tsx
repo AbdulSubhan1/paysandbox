@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 /** Code tabs with a Copy button. */
 export function CodeBlock({ tabs }: { tabs: { label: string; code: string }[] }) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 /** A monospace ID you can click to copy. */
 export function IdText({ value }: { value: string }) {
