@@ -18,7 +18,8 @@ test('9995 shows insufficient funds @smoke', async ({ page, request }) => {
   await fillCheckout(page, '4000000000009995');
   await payButton(page).click();
   await expect(page.getByRole('heading', { name: 'Payment declined' })).toBeVisible();
-  await expect(page.getByText('card_declined · insufficient_funds')).toBeVisible();
+  await expect(page.getByText('Your bank declined this card: not enough funds. Try another card.')).toBeVisible();
+  await expect(page.getByText('card_declined · insufficient_funds')).toBeVisible(); // for developers
 });
 
 test('3220 with OTP 123456 succeeds @smoke', async ({ page, request }) => {

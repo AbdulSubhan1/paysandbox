@@ -74,7 +74,7 @@ describe('CardForm', () => {
     expect(screen.getByRole('link', { name: /Return to Chai Code Co./ })).toHaveAttribute('href', 'https://shop.test/thanks?pay=pay_1');
   });
 
-  it('shows a decline with its codes and lets the customer try another card', async () => {
+  it('leads a decline with a plain sentence, keeps the codes for developers and lets the customer try another card', async () => {
     fetchMock.mockResolvedValue(
       Response.json({
         status: 'failed',
@@ -86,7 +86,10 @@ describe('CardForm', () => {
     await fillValid();
     await userEvent.click(screen.getByRole('button', { name: /^Pay PKR 5,100.00$/ }));
     expect(await screen.findByRole('heading', { name: 'Payment declined' })).toBeInTheDocument();
+    expect(screen.getByText('Your bank declined this card: not enough funds. Try another card.')).toBeInTheDocument();
+    expect(screen.queryByText('Your card has insufficient funds.')).not.toBeInTheDocument();
     expect(screen.getByText('card_declined · insufficient_funds')).toBeInTheDocument();
+    expect(screen.getByText(/For developers:/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Try another card' }));
     expect(screen.getByRole('button', { name: /^Pay PKR 5,100.00$/ })).toBeInTheDocument();
   });
