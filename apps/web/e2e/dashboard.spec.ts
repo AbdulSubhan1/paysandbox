@@ -9,8 +9,16 @@ test('the overview adds up the project payments (PS-DB-001) @smoke', async ({ pa
   await page.goto(`/dashboard/${merchantId}`);
   const tile = (label: string) => page.getByRole('link', { name: new RegExp(`^${label} PKR`) });
   await expect(tile('Net volume')).toContainText('PKR 5,100.00');
-  await expect(tile('Failed')).toContainText('PKR 5,100.00');
-  await expect(tile('Failed')).toContainText('1 payment');
+  await expect(tile('Successful payments')).toContainText('1 payment · 50% of attempts');
+  await expect(tile('Refunded and disputed')).toContainText('PKR 0.00');
+  await expect(page.getByRole('img', { name: /successful volume per day, last 14 days: PKR 5,100.00 in total/ })).toBeVisible();
+  const attention = page.getByRole('region', { name: 'Needs attention' });
+  await expect(attention).toContainText('1 decline in the last 14 days');
+  await attention.getByRole('link', { name: 'View' }).click();
+  await expect(page).toHaveURL(new RegExp(`/dashboard/${merchantId}/payments\\?status=failed&range=14d$`));
+  await expect(page.getByText('Showing 1–1 of 1')).toBeVisible();
+  await page.goto(`/dashboard/${merchantId}?range=7d`);
+  await expect(page.getByLabel('Date range')).toHaveValue('7d');
   await expectNoSeriousA11yIssues(page);
 });
 
@@ -19,24 +27,33 @@ test('refund part of a payment, then win a simulated dispute (PS-RF-010, PS-DP-0
   const { payment_id } = await payViaApi(request, (await createSession(request, sk)).id, '4242424242424242');
   await page.goto(`/dashboard/${merchantId}/payments`);
   await expectNoSeriousA11yIssues(page);
-  await page.getByRole('link', { name: 'PKR 5,100.00' }).click();
+  await page.getByRole('searchbox').fill(payment_id);
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('Showing 1–1 of 1')).toBeVisible();
+  await page.getByRole('link', { name: 'Developer hoodie' }).click();
   await expect(page).toHaveURL(new RegExp(`/payments/${payment_id}$`));
 
-  const amount = page.getByLabel('Amount (max PKR 5,100.00)');
-  await amount.fill('1,000');
-  await page.getByLabel('Reason').selectOption('requested_by_customer');
   await page.getByRole('button', { name: 'Refund', exact: true }).click();
+  const refund = page.getByRole('dialog', { name: 'Refund this payment' });
+  await expect(refund.getByLabel('Amount')).toHaveValue(''); // never pre-filled
+  await refund.getByLabel('Amount').fill('1,000');
+  await refund.getByLabel('Reason').selectOption('requested_by_customer');
+  await expectNoSeriousA11yIssues(page);
+  await refund.getByRole('button', { name: 'Refund', exact: true }).click();
   await expect(page.locator('[data-toast]').getByText('Refunded PKR 1,000.00')).toBeVisible();
-  await expect(page.getByText('Partially refunded').first()).toBeVisible();
+  await expect(refund).toHaveCount(0);
+  await expect(page.getByText('Partly refunded').first()).toBeVisible();
   await expect(page.getByText('Refunded PKR 1,000.00', { exact: true }).last()).toBeVisible();
 
-  await page.getByRole('button', { name: 'Simulate dispute' }).click();
+  await page.getByRole('button', { name: 'More actions' }).click();
+  await page.getByRole('menuitem', { name: 'Simulate dispute' }).click();
+  await page.getByRole('alertdialog', { name: 'Simulate a dispute?' }).getByRole('button', { name: 'Simulate dispute' }).click();
   await expect(page.getByRole('heading', { name: 'Dispute: needs your response' })).toBeVisible();
   await expect(page.getByText(/PKR 4,100.00 is on hold/)).toBeVisible();
   await expectNoSeriousA11yIssues(page);
   await page.getByRole('button', { name: 'Submit evidence and win' }).click();
   await expect(page.getByRole('heading', { name: 'Dispute: needs your response' })).toHaveCount(0);
-  await expect(page.getByText('Partially refunded').first()).toBeVisible();
+  await expect(page.getByText('Partly refunded').first()).toBeVisible();
 });
 
 test('Resend now sends the event again with the same webhook-id (PS-WH-009)', async ({ page, request }) => {

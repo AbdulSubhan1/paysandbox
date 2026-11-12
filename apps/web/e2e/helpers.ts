@@ -51,7 +51,7 @@ export async function fillCheckout(page: Page, card: string) {
 }
 
 export const payButton = (page: Page) => page.getByRole('button', { name: /^Pay [A-Z]{3} / });
-export const banner = (page: Page) => page.getByText('TEST MODE · no real payments');
+export const banner = (page: Page) => page.getByText('TEST MODE · no real money moves');
 
 export async function expectNoSeriousA11yIssues(page: Page) {
   // Toasts animate in with changing opacity, which axe reads as low contrast; they're checked at rest elsewhere.

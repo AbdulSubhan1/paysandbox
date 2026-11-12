@@ -29,7 +29,7 @@ async function Webhooks({ params, searchParams }: Props) {
         <h1 className="text-2xl font-bold">Webhooks</h1>
         <p className="text-muted-foreground">Signed with Standard Webhooks. Retried after 1 min, 5 min, 30 min, 2 h and 6 h.</p>
       </div>
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section aria-label="Webhook endpoint" className="rounded-xl border border-border bg-card p-4">
         <WebhookEndpointCard merchantId={merchantId} endpoint={endpoint ? { url: endpoint.url, enabled: endpoint.enabled } : null} />
       </section>
       <section aria-labelledby="event-log" className="flex flex-col gap-3">

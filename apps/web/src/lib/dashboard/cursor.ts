@@ -18,6 +18,11 @@ export function olderThan(createdAt: AnyColumn, id: AnyColumn, cursor: { at: Dat
   return sql`(date_trunc('milliseconds', ${createdAt}), ${id}) < (${cursor.at.toISOString()}::timestamptz, ${cursor.id})`;
 }
 
+/** Rows strictly newer than the cursor: the mirror of `olderThan`, for paging back. */
+export function newerThan(createdAt: AnyColumn, id: AnyColumn, cursor: { at: Date; id: string }): SQL {
+  return sql`(date_trunc('milliseconds', ${createdAt}), ${id}) > (${cursor.at.toISOString()}::timestamptz, ${cursor.id})`;
+}
+
 /** Fetch one extra row to know whether there is a next page. */
 export function pageOf<T extends { createdAt: Date; id: string }>(rows: T[], size: number): { rows: T[]; next: string | null } {
   return rows.length > size ? { rows: rows.slice(0, size), next: encodeCursor(rows[size - 1]) } : { rows, next: null };

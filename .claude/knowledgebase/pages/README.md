@@ -1,6 +1,6 @@
 # Pages
 
-Every screen of PaySandbox, one file each. All dashboard pages belong to one project; the project switcher at the top of the sidebar moves between a user's projects and keeps the same section open.
+Every screen of PaySandbox, one file each. All dashboard pages belong to one project; the header shows the project (a switcher when there are several, keeping the same section open), a "Test mode" pill and an account menu (initials: who is signed in, your projects, sign out).
 
 | Page | Who | Address |
 |---|---|---|

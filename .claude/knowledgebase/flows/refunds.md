@@ -1,7 +1,7 @@
 # Refunds
 
-1. The merchant opens a succeeded payment and chooses **Refund this payment** (or their server asks for a refund with the secret key).
-2. The amount defaults to the amount left; the merchant can lower it for a partial refund, and picks a reason.
+1. The merchant opens a succeeded payment and clicks **Refund** (or their server asks for a refund with the secret key).
+2. In the dialog the amount starts empty: the merchant types an amount or clicks "Full …" for what is left, and picks a reason.
 3. PaySandbox records the refund, updates the payment to **partially refunded** or **refunded**, adds it to the timeline and sends `refund.created`.
 
 ## Rules

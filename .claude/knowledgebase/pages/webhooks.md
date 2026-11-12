@@ -14,7 +14,7 @@ Set the address that receives events, manage its signing secret, and see every e
 
 ## What the user can do
 - Save the endpoint URL ("Endpoint saved").
-- Reveal or copy the signing secret; **roll** it (the old secret keeps working for 24 hours).
+- Reveal or copy the signing secret; **roll** it. Rolling is a quiet red action that asks for confirmation first; the old secret keeps working for 24 hours.
 - Re-enable a disabled endpoint.
 - Send a test event; it arrives in a few seconds.
 - Open an event's detail.

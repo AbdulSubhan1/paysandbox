@@ -20,6 +20,8 @@ const SIZES = {
   xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs [&_svg:not([class*='size-'])]:size-3",
   sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] [&_svg:not([class*='size-'])]:size-3.5",
   lg: "rounded-lg h-9 gap-1.5 px-2.5 text-sm [&_svg:not([class*='size-'])]:size-4",
+  /** As tall as a form field (40px): actions next to inputs and in dialogs. */
+  field: "rounded-lg h-10 gap-1.5 px-3.5 text-sm [&_svg:not([class*='size-'])]:size-4",
   /** Big calls to action: Pay, and the landing page. */
   xl: "rounded-lg h-12 gap-2 px-5 text-base [&_svg:not([class*='size-'])]:size-5",
   icon: 'rounded-lg size-8 text-sm',

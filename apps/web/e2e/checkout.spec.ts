@@ -111,3 +111,21 @@ test('axe: no serious or critical issues on the checkout @smoke', async ({ page,
   await expect(page.getByRole('heading', { name: 'Payment successful' })).toBeVisible();
   await expectNoSeriousA11yIssues(page); // success
 });
+
+test.describe('at phone width', () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test('the form comes first, the order is folded, and the result replaces the page @smoke', async ({ page, request }) => {
+    await page.goto((await createSession(request)).url);
+    const order = page.getByRole('region', { name: 'Order summary' }); // the desktop one is display:none here
+    await expect(order.getByText('Developer hoodie')).toBeHidden(); // folded
+    await order.getByText(/^Order summary · 1 item$/).click();
+    await expect(order.getByText('Developer hoodie')).toBeVisible();
+    expect((await page.getByRole('note').boundingBox())!.height).toBeLessThanOrEqual(28);
+    await fillCheckout(page, '4242424242424242');
+    await payButton(page).click();
+    await expect(page.getByRole('heading', { name: 'Payment successful' })).toBeInViewport();
+    await expect(order).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  });
+});
