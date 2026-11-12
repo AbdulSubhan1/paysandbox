@@ -49,9 +49,7 @@ function EndpointCard({ merchantId, endpoint }: { merchantId: string; endpoint: 
   const [rollOpen, setRollOpen] = useState(false); // AlertDialogAction is a plain button: close the dialog ourselves
 
   return (
-    <div className="flex flex-col gap-3 border-t border-border pt-4">
-      <h3 className="text-sm font-semibold">Webhooks</h3>
-
+    <div className="flex flex-col gap-4">
       {saved && !enabled && (
         <Alert variant="destructive">
           <AlertTitle>Disabled after 20 failed events in a row</AlertTitle>
@@ -160,7 +158,7 @@ function EndpointCard({ merchantId, endpoint }: { merchantId: string; endpoint: 
               </div>
             )}
             <AlertDialog open={rollOpen} onOpenChange={setRollOpen}>
-              <AlertDialogTrigger render={<Button variant="outline" size="sm" className="self-start" />}>Roll signing secret</AlertDialogTrigger>
+              <AlertDialogTrigger render={<Button variant="destructive" size="sm" className="self-start" />}>Roll signing secret</AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Roll the signing secret?</AlertDialogTitle>
@@ -172,6 +170,7 @@ function EndpointCard({ merchantId, endpoint }: { merchantId: string; endpoint: 
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
+                    variant="danger"
                     onClick={async () => {
                       try {
                         const r = await rollWebhookSecretAction(merchantId);
