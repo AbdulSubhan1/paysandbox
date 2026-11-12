@@ -28,7 +28,7 @@ export function PaymentResult({
 
   const ok = result.status === 'succeeded';
   return (
-    <div className="mx-auto max-w-md pt-6 text-center">
+    <div data-checkout-result className="mx-auto max-w-md pt-6 text-center">
       <div
         aria-hidden
         className={`mx-auto mb-4 grid size-14 place-items-center rounded-full text-2xl font-bold ${ok ? 'bg-success-soft text-success' : 'bg-destructive-soft text-destructive'}`}
