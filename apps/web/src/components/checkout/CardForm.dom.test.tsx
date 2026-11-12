@@ -13,20 +13,19 @@ afterEach(() => vi.unstubAllGlobals());
 const renderForm = () =>
   render(<CardForm sessionId="cs_test_1" amount={510000} currency="pkr" merchantName="Chai Code Co." defaultEmail="" />);
 
+/** Picking a test card fills the number, expiry and CVC; only email and name are left to type. */
 async function fillValid() {
   await userEvent.type(screen.getByLabelText('Email'), 'ayesha@example.com');
   await userEvent.click(screen.getByRole('button', { name: /4242 4242 4242 4242/ }));
-  await userEvent.type(screen.getByLabelText(/Expiry/), '1229');
-  await userEvent.type(screen.getByLabelText(/CVC/), '123');
   await userEvent.type(screen.getByLabelText('Name on card'), 'Ayesha Khan');
 }
 
 describe('CardForm', () => {
   it('shows every field error, focuses the first and sends nothing (PS-FV-001…007)', async () => {
     renderForm();
-    await userEvent.click(screen.getByRole('button', { name: /4242 4242 4242 4242/ }));
     await userEvent.type(screen.getByLabelText(/Expiry/), '0120');
     await userEvent.type(screen.getByLabelText(/CVC/), '12');
+    await userEvent.click(screen.getByRole('button', { name: /4242 4242 4242 4242/ }));
     await userEvent.click(screen.getByRole('button', { name: /^Pay PKR 5,100.00$/ }));
     expect(screen.getByText('Enter your email.')).toBeInTheDocument();
     expect(screen.getByText('This expiry date is in the past.')).toBeInTheDocument();
@@ -42,6 +41,23 @@ describe('CardForm', () => {
     expect(screen.getByLabelText(/Expiry/)).toHaveValue('12 / 29');
   });
 
+  it('fills an empty expiry and CVC when a test card is picked', async () => {
+    renderForm();
+    await userEvent.click(screen.getByRole('button', { name: /4000 0000 0000 9995/ }));
+    expect(screen.getByLabelText('Card information')).toHaveValue('4000 0000 0000 9995');
+    expect(screen.getByLabelText(/Expiry/)).toHaveValue('12 / 34');
+    expect(screen.getByLabelText(/CVC/)).toHaveValue('123');
+  });
+
+  it('keeps an expiry and CVC the customer already typed when a test card is picked', async () => {
+    renderForm();
+    await userEvent.type(screen.getByLabelText(/Expiry/), '0631');
+    await userEvent.type(screen.getByLabelText(/CVC/), '987');
+    await userEvent.click(screen.getByRole('button', { name: /4242 4242 4242 4242/ }));
+    expect(screen.getByLabelText(/Expiry/)).toHaveValue('06 / 31');
+    expect(screen.getByLabelText(/CVC/)).toHaveValue('987');
+  });
+
   it('posts once with an attempt id and never the CVC', async () => {
     fetchMock.mockResolvedValue(Response.json({ status: 'succeeded', payment_id: 'pay_1', return_url: 'https://shop.test/thanks?pay=pay_1' }));
     renderForm();
@@ -53,7 +69,7 @@ describe('CardForm', () => {
     const body = JSON.parse(init.body);
     expect(body).not.toHaveProperty('cvc');
     expect(JSON.stringify(body)).not.toContain('123"');
-    expect(body).toMatchObject({ attempt_id: expect.any(String), card_number: '4242424242424242', expiry: '12 / 29' });
+    expect(body).toMatchObject({ attempt_id: expect.any(String), card_number: '4242424242424242', expiry: '12 / 34' });
     expect(await screen.findByRole('heading', { name: 'Payment successful' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Return to Chai Code Co./ })).toHaveAttribute('href', 'https://shop.test/thanks?pay=pay_1');
   });
