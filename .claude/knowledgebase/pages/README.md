@@ -4,7 +4,7 @@ Every screen of PaySandbox, one file each. All dashboard pages belong to one pro
 
 | Page | Who | Address |
 |---|---|---|
-| [Sign-in and invite-only](sign-in.md) | Everyone | `/`, `/invite-only` |
+| [Home, sign-in and invite-only](sign-in.md) | Everyone | `/`, `/invite-only` |
 | [Projects](projects.md) | Merchant | `/dashboard/projects` |
 | [Overview](overview.md) | Merchant | `/dashboard/<project>` |
 | [Payments](payments.md) | Merchant | `/dashboard/<project>/payments` |
