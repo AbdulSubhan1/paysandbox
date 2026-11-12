@@ -55,7 +55,7 @@ export const banner = (page: Page) => page.getByText('TEST MODE · no real payme
 
 export async function expectNoSeriousA11yIssues(page: Page) {
   // Toasts animate in with changing opacity, which axe reads as low contrast; they're checked at rest elsewhere.
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).exclude('[data-sonner-toaster]').analyze();
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).exclude('[data-toaster]').analyze();
   const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
 }

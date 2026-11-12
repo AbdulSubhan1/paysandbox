@@ -71,12 +71,12 @@ test('a project takes an https webhook endpoint and shows, then rolls, its signi
   await url.fill('http://10.0.0.5/x');
   await page.getByRole('button', { name: 'Save endpoint' }).click();
   await expect(page.locator('form').filter({ has: url }).getByText(/must use https/)).toBeVisible(); // under the field
-  await expect(page.locator('[data-sonner-toast]').getByText(/must use https/)).toBeVisible(); // and as a toast
+  await expect(page.locator('[data-toast]').getByText(/must use https/)).toBeVisible(); // and as a toast
 
   await url.fill('http://127.0.0.1:4555/hook'); // allowed only in E2E mode
   await page.getByRole('button', { name: 'Save endpoint' }).click();
   await expect(page.getByText('whsec_••••••••')).toBeVisible();
-  await expect(page.locator('[data-sonner-toast]').getByText('Endpoint saved')).toBeVisible();
+  await expect(page.locator('[data-toast]').getByText('Endpoint saved')).toBeVisible();
 
   await page.getByRole('button', { name: 'Reveal' }).click();
   const secret = page.getByLabel('Signing secret', { exact: true });

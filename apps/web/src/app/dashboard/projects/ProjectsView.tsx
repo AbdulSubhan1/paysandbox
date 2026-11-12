@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState, useState, useTransition } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { type RevealedSecret, SecretKeyDialog } from '@/components/dashboard/SecretKey';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +34,7 @@ export function ProjectsView({ projects, canCreate, max }: { projects: Project[]
 
       {projects.map((p) => (
         <Card key={p.id}>
-          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4">
             <CardTitle>{p.name}</CardTitle>
             <div className="flex items-center gap-3">
               <ProjectCurrency project={p} />
@@ -42,7 +42,7 @@ export function ProjectsView({ projects, canCreate, max }: { projects: Project[]
                 Open dashboard
               </Link>
             </div>
-          </CardHeader>
+          </div>
         </Card>
       ))}
 

@@ -4,12 +4,12 @@ import type { ComponentProps } from 'react';
 import { Button } from '@/components/ui/button';
 import { authClient } from '@/lib/auth/client';
 
-type Props = Pick<ComponentProps<typeof Button>, 'variant' | 'className' | 'children'>;
+type Props = Pick<ComponentProps<typeof Button>, 'variant' | 'size' | 'className' | 'children'>;
 
-export function SignInButton({ variant, className, children = 'Sign in with GitHub' }: Props) {
+export function SignInButton({ variant, size = 'lg', className, children = 'Sign in with GitHub' }: Props) {
   return (
     <Button
-      size="lg"
+      size={size}
       variant={variant}
       className={className}
       onClick={() =>

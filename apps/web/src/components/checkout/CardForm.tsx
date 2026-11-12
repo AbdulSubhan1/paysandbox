@@ -268,7 +268,7 @@ export function CardForm({
           </Alert>
         )}
 
-        <Button type="submit" size="lg" disabled={busy && !otp} className="mt-1 h-12 text-base">
+        <Button type="submit" size="xl" disabled={busy && !otp} className="mt-1">
           {busy && !otp ? (
             <>
               <Spinner /> Processing…

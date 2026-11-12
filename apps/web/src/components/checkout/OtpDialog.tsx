@@ -29,7 +29,7 @@ export function OtpDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
-      <DialogContent showCloseButton={false} className="gap-0 overflow-hidden p-0">
+      <DialogContent showCloseButton={false} flush>
         <div className="flex items-center justify-between bg-[#173a6b] px-5 py-3.5 font-semibold text-white">
           <span>Sandbox Bank</span>
           <span className="text-xs font-normal opacity-80">3-D Secure · test</span>

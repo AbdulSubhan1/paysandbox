@@ -70,8 +70,8 @@ async function Payments({ params, searchParams }: Props) {
               href={link({ status: k })}
               aria-current={on ? 'true' : undefined}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-sm',
-                on ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:border-primary',
+                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm',
+                on ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card hover:border-primary',
               )}
             >
               {label}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,9 +18,6 @@ import { formatPkt } from '@/lib/format';
 import type { Currency } from '@/lib/currency';
 import { formatMoney } from '@/lib/money';
 import type { ActionResult } from './RefundForm';
-
-/** Solid red with white text: the soft destructive variant is under 4.5:1 contrast on tinted panels. */
-export const SOLID_DANGER = 'bg-destructive text-white hover:bg-destructive/90';
 
 const REASON_TEXT: Record<string, string> = {
   product_not_received: 'The customer says the product never arrived.',
@@ -66,7 +63,7 @@ export function DisputePanel({
           Submit evidence and win
         </Button>
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <AlertDialogTrigger render={<Button className={SOLID_DANGER} disabled={sending} />}>Accept and lose</AlertDialogTrigger>
+          <AlertDialogTrigger render={<Button variant="danger" disabled={sending} />}>Accept and lose</AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Accept the dispute and lose {formatMoney(dispute.amount, dispute.currency)}?</AlertDialogTitle>

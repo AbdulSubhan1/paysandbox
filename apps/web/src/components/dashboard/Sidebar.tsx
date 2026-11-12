@@ -36,8 +36,8 @@ export function Sidebar({ merchantId, current }: { merchantId: string; current?:
       href={href(merchantId, s)}
       aria-current={s === active ? 'page' : undefined}
       className={cn(
-        'shrink-0 rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground hover:bg-muted hover:text-foreground',
-        s === active && 'bg-muted font-semibold text-foreground',
+        'shrink-0 rounded-md px-3 py-1.5 text-sm whitespace-nowrap hover:bg-muted hover:text-foreground',
+        s === active ? 'bg-muted font-semibold text-foreground' : 'text-muted-foreground',
       )}
     >
       {label}
