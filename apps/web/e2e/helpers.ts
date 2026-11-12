@@ -29,16 +29,24 @@ export async function waitForCheckout(page: Page) {
   await expect(page.getByLabel('Card information')).toBeEnabled();
 }
 
-/** Fills the checkout with valid details and the given test card (by clicking it in the picker or typing). */
+/**
+ * Fills the checkout with valid details and the given test card. A card in the picker is clicked, which also fills
+ * the expiry and CVC; any other card is typed with its expiry and CVC.
+ */
 export async function fillCheckout(page: Page, card: string) {
   await waitForCheckout(page);
   await page.getByLabel('Email').fill('ayesha@example.com');
   const spaced = card.replace(/(\d{4})(?=\d)/g, '$1 ');
   const pick = page.getByRole('button', { name: new RegExp(spaced) });
-  if (await pick.count()) await pick.click();
-  else await page.getByLabel('Card information').pressSequentially(card);
-  await page.getByLabel(/Expiry/).pressSequentially('1229');
-  await page.getByLabel(/CVC/).fill('123');
+  if (await pick.count()) {
+    await pick.click();
+    await expect(page.getByLabel(/Expiry/)).toHaveValue('12 / 34');
+    await expect(page.getByLabel(/CVC/)).toHaveValue('123');
+  } else {
+    await page.getByLabel('Card information').pressSequentially(card);
+    await page.getByLabel(/Expiry/).pressSequentially('1229');
+    await page.getByLabel(/CVC/).fill('123');
+  }
   await page.getByLabel('Name on card').fill('Ayesha Khan');
 }
 

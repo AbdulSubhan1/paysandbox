@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { plainDeclineMessage } from '@/lib/checkout/decline-message';
 
 export type PayResponse = {
   status: 'succeeded' | 'requires_action' | 'failed';
@@ -46,10 +47,13 @@ export function PaymentResult({
         </>
       ) : (
         <>
-          <p className="mt-1 text-muted-foreground">{result.failure?.message}</p>
-          <p className="mt-2 font-mono text-sm">
-            {[result.failure?.code, result.failure?.decline_code].filter(Boolean).join(' · ')}
-          </p>
+          <p className="mt-1 text-muted-foreground">{result.failure && plainDeclineMessage(result.failure)}</p>
+          {result.failure && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              For developers:{' '}
+              <code className="font-mono">{[result.failure.code, result.failure.decline_code].filter(Boolean).join(' · ')}</code>
+            </p>
+          )}
         </>
       )}
       <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-xl bg-background p-4 text-left text-sm">

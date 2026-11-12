@@ -7,15 +7,15 @@ PaySandbox's own payment page. The customer pays a checkout session with a test 
 
 ## What it shows
 - The TEST MODE banner, always.
-- The merchant's name and the order summary (line items and total in the project's currency).
+- The merchant's name with its initial (always a capital letter) and the order summary: line items and the total in the project's currency. A line shows "Qty N" only when N is more than 1, and a line that costs nothing shows "Included".
 - A card form (email, name, card number, expiry, CVC) and a picker with the main test cards.
-- After paying: a success screen with a button back to the merchant, or a decline screen with the reason and "Try another card".
+- After paying: a success screen with a button back to the merchant, or a decline screen that leads with a plain sentence (for example "Your bank declined this card: not enough funds. Try another card."), shows the raw codes as small "For developers" text, and offers "Try another card".
 - For card 3220: the simulated "Sandbox Bank" OTP screen.
 - An "already paid" page for a paid session and an "expired" page for an expired one, each linking back to the merchant.
 - "Checkout not found" for a wrong address.
 
 ## What the user can do
-- Pick a test card or type one; pay.
+- Pick a test card or type one; pay. Picking a card also fills an empty expiry (12 / 34) and CVC (123); anything already typed there is kept.
 - Enter the OTP (123456) or cancel it.
 - Try another card after a decline (the declined attempt stays in the history).
 - Return to the merchant's site.

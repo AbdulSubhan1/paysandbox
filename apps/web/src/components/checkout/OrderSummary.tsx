@@ -4,11 +4,16 @@ import type { LineItem } from '@/lib/db/schema';
 
 type Props = { merchantName: string; lineItems: LineItem[]; amount: number; currency: Currency };
 
+/** The avatar letter, uppercase however the merchant typed their name. */
+export const merchantInitial = (name: string) => name.trim().slice(0, 1).toUpperCase();
+
 export function OrderSummary({ merchantName, lineItems, amount, currency }: Props) {
   return (
     <section aria-label="Order summary">
       <div className="flex items-center gap-2 font-semibold">
-        <span className="grid size-8 place-items-center rounded-lg bg-[#7a4b2a] text-sm text-white">{merchantName.slice(0, 1)}</span>
+        <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-[#7a4b2a] text-sm text-white">
+          {merchantInitial(merchantName)}
+        </span>
         <span className="break-words">{merchantName}</span>
         <span className="rounded-full bg-warning-soft px-2 py-0.5 text-xs font-semibold text-warning">Test</span>
       </div>
@@ -19,9 +24,13 @@ export function OrderSummary({ merchantName, lineItems, amount, currency }: Prop
           <li key={i} className="flex justify-between gap-4 border-b border-border py-3 text-sm">
             <span className="min-w-0 break-words">
               {item.name}
-              <span className="block text-xs text-muted-foreground">Qty {item.quantity}</span>
+              {item.quantity > 1 && <span className="block text-xs text-muted-foreground">Qty {item.quantity}</span>}
             </span>
-            <Money amount={item.amount * item.quantity} currency={currency} className="shrink-0" />
+            {item.amount * item.quantity === 0 ? (
+              <span className="shrink-0 text-muted-foreground">Included</span>
+            ) : (
+              <Money amount={item.amount * item.quantity} currency={currency} className="shrink-0" />
+            )}
           </li>
         ))}
         <li className="flex justify-between py-3 text-sm font-bold">

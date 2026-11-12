@@ -34,7 +34,8 @@ export function TestCardPicker({ onPick }: { onPick: (number: string) => void })
         </li>
       </ul>
       <p className="mx-2.5 mt-2 text-xs text-muted-foreground">
-        Any future expiry and any 3-digit CVC work. OTP for the 3-D Secure card is <b>123456</b>.
+        A click also fills an empty expiry (12 / 34) and CVC (123); any future expiry and any 3-digit CVC work. OTP for
+        the 3-D Secure card is <b>123456</b>.
       </p>
     </section>
   );

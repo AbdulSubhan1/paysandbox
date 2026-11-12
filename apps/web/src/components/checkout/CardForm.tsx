@@ -17,6 +17,9 @@ type FieldName = 'email' | 'card' | 'exp' | 'cvc' | 'name';
 const ORDER: FieldName[] = ['email', 'card', 'exp', 'cvc', 'name'];
 const IDS: Record<FieldName, string> = { email: 'email', card: 'cardnum', exp: 'exp', cvc: 'cvc', name: 'name' };
 const SERVER_FIELDS: Record<string, FieldName> = { email: 'email', name: 'name', expiry: 'exp', card_number: 'card' };
+// What a click in the test card picker puts in an empty expiry and CVC: any future date and any 3 digits work.
+const PICKED_EXPIRY = '12 / 34';
+const PICKED_CVC = '123';
 
 const formatExpiry = (raw: string, deleting: boolean) => {
   const d = raw.replace(/\D/g, '').slice(0, 4);
@@ -281,6 +284,15 @@ export function CardForm({
         onPick={(number) => {
           if (!cardRef.current) return;
           fillInput(cardRef.current, number);
+          // Fill the rest of the card too, but never over something the customer already typed.
+          if (!exp) {
+            setExp(PICKED_EXPIRY);
+            clearError('exp');
+          }
+          if (!cvc) {
+            setCvc(PICKED_CVC);
+            clearError('cvc');
+          }
           cardRef.current.focus();
         }}
       />
