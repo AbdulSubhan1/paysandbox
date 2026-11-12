@@ -1,6 +1,6 @@
 # Projects
 
-**Area:** account · **Who uses it:** merchant · **Reached from:** after sign-in, or the project switcher
+**Area:** account · **Who uses it:** merchant · **Reached from:** after sign-in, the account menu's "Your projects", or the PaySandbox logo
 
 ## What this page is for
 Lists the user's projects (merchant accounts) and creates new ones. Each project is one integration with its own keys, webhook address and data.
