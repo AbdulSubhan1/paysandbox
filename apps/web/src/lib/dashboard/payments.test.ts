@@ -67,4 +67,37 @@ describe('listDashboardPayments', () => {
     const first = await listDashboardPayments(db, a, {});
     expect(bad.rows.map((p) => p.id)).toEqual(first.rows.map((p) => p.id));
   });
+
+  it('says where a page is ("Showing 26–50 of 60") and pages back with Previous to the same rows', async () => {
+    const p1 = await listDashboardPayments(db, a, {});
+    expect([p1.from, p1.rows.length, p1.total, p1.prev]).toEqual([1, 25, 60, null]);
+    const p2 = await listDashboardPayments(db, a, { before: p1.next! });
+    expect([p2.from, p2.rows.length]).toEqual([26, 25]);
+    const p3 = await listDashboardPayments(db, a, { before: p2.next! });
+    expect([p3.from, p3.rows.length, p3.next]).toEqual([51, 10, null]);
+    const back = await listDashboardPayments(db, a, { after: p3.prev! });
+    expect(back.rows.map((r) => r.id)).toEqual(p2.rows.map((r) => r.id));
+    expect(back.from).toBe(26);
+    const first = await listDashboardPayments(db, a, { after: back.prev! });
+    expect(first.rows.map((r) => r.id)).toEqual(p1.rows.map((r) => r.id));
+    expect(first.prev).toBeNull();
+  });
+});
+
+describe('payment search and date range', () => {
+  it('finds by part of the email or name, or a whole pay_ id; the search is text, not a LIKE pattern', async () => {
+    expect((await listDashboardPayments(db, a, { q: 'AYESHA@' })).total).toBe(30);
+    expect((await listDashboardPayments(db, a, { q: 'bil' })).total).toBe(30);
+    const one = (await listDashboardPayments(db, a, {})).rows[3];
+    expect((await listDashboardPayments(db, a, { q: one.id })).rows.map((r) => r.id)).toEqual([one.id]);
+    expect((await listDashboardPayments(db, a, { q: '%' })).total).toBe(0);
+    expect((await listDashboardPayments(db, a, { q: '_' })).total).toBe(0);
+    expect((await paymentStatusCounts(db, a, { q: 'ayesha' })).all).toBe(30);
+  });
+
+  it('keeps only payments since the range start', async () => {
+    const since = new Date(Date.UTC(2026, 10, 11, 10, 10)); // the last 30 of the 60 (10:10 to 10:19)
+    expect((await listDashboardPayments(db, a, { since })).total).toBe(30);
+    expect((await paymentStatusCounts(db, a, { since })).all).toBe(30);
+  });
 });

@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, isNull, or, sql } from 'drizzle-orm';
 import type { Db } from '@/lib/db/client';
-import { customers, disputes, events, paymentActivity, payments, refunds, webhookDeliveries } from '@/lib/db/schema';
+import { checkoutSessions, customers, disputes, events, type LineItem, paymentActivity, payments, refunds, webhookDeliveries } from '@/lib/db/schema';
 import type { DisputeRow } from '@/lib/disputes/disputes';
 import type { CustomerRow, PaymentRow } from '@/lib/payments/objects';
 import type { RefundRow } from '@/lib/refunds/refunds';
@@ -10,6 +10,8 @@ export type TimelineItem = { kind: string; message: string; at: Date; detail: un
 export type PaymentDetail = {
   payment: PaymentRow;
   customer: CustomerRow;
+  /** What was bought: the checkout session's line items. */
+  lineItems: LineItem[];
   timeline: TimelineItem[];
   refunds: RefundRow[];
   dispute: DisputeRow | null;
@@ -24,8 +26,9 @@ export async function getPaymentDetail(db: Db, merchantId: string, paymentId: st
     .where(and(eq(payments.id, paymentId), eq(payments.merchantId, merchantId)));
   if (!payment) return null;
 
-  const [[customer], timeline, refundRows, [dispute], eventRows] = await Promise.all([
+  const [[customer], [session], timeline, refundRows, [dispute], eventRows] = await Promise.all([
     db.select().from(customers).where(eq(customers.id, payment.customerId)),
+    db.select({ lineItems: checkoutSessions.lineItems }).from(checkoutSessions).where(eq(checkoutSessions.id, payment.checkoutSessionId)),
     // The session's own rows (e.g. "Checkout session created") plus this payment's, not other attempts on the session.
     db
       .select({ kind: paymentActivity.kind, message: paymentActivity.message, at: paymentActivity.createdAt, detail: paymentActivity.detail })
@@ -55,6 +58,7 @@ export async function getPaymentDetail(db: Db, merchantId: string, paymentId: st
   return {
     payment,
     customer,
+    lineItems: session?.lineItems ?? [],
     timeline,
     refunds: refundRows,
     dispute: dispute ?? null,
