@@ -160,7 +160,7 @@ export function DialogContent({
   size?: keyof typeof WIDTHS;
 }) {
   return (
-    <ModalDialog dismissOnBackdrop className={cn('relative rounded-xl open:grid', flush ? 'gap-0 overflow-hidden p-0' : 'gap-4 p-4', WIDTHS[size], className)}>
+    <ModalDialog dismissOnBackdrop className={cn('relative grid-cols-[minmax(0,1fr)] rounded-xl open:grid', flush ? 'gap-0 overflow-hidden p-0' : 'gap-4 p-4', WIDTHS[size], className)}>
       {children}
       {showCloseButton && (
         <DialogClose render={<Button variant="ghost" size="icon-sm" className="absolute top-2 right-2" />}>

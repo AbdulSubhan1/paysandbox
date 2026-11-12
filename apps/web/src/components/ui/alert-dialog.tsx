@@ -11,7 +11,7 @@ export const AlertDialogTrigger = DialogTrigger;
 /** role="alertdialog"; a backdrop click does not close it (Escape and Cancel do). */
 export function AlertDialogContent({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <ModalDialog role="alertdialog" dismissOnBackdrop={false} className={cn('group/alert-dialog-content max-w-xs gap-4 rounded-xl p-4 open:grid sm:max-w-sm', className)}>
+    <ModalDialog role="alertdialog" dismissOnBackdrop={false} className={cn('group/alert-dialog-content max-w-xs grid-cols-[minmax(0,1fr)] gap-4 rounded-xl p-4 open:grid sm:max-w-sm', className)}>
       {children}
     </ModalDialog>
   );
