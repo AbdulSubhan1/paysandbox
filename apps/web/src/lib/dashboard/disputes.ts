@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, count, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/lib/db/client';
 import { customers, disputes, payments } from '@/lib/db/schema';
 import type { DisputeRow } from '@/lib/disputes/disputes';
@@ -17,4 +17,13 @@ export async function listDisputes(db: Db, merchantId: string): Promise<(Dispute
       sql`${disputes.createdAt} desc`,
     );
   return rows.map((r) => ({ ...r.dispute, customerName: r.customerName }));
+}
+
+/** Disputes waiting for the merchant's answer: the sidebar badge. */
+export async function countOpenDisputes(db: Db, merchantId: string): Promise<number> {
+  const [r] = await db
+    .select({ n: count() })
+    .from(disputes)
+    .where(and(eq(disputes.merchantId, merchantId), eq(disputes.status, 'needs_response')));
+  return r.n;
 }

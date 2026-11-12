@@ -6,9 +6,11 @@ import { ProjectsView } from './ProjectsView';
 
 export default function ProjectsPage() {
   return (
-    <Suspense fallback={<p className="text-muted-foreground">Loading projects…</p>}>
-      <Projects />
-    </Suspense>
+    <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
+      <Suspense fallback={<p className="text-muted-foreground">Loading projects…</p>}>
+        <Projects />
+      </Suspense>
+    </main>
   );
 }
 
